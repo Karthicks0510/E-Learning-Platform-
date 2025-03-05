@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'Components/appbar.dart'; // Import Custom AppBar & Drawer
+import 'Components/appbar.dart';
+import '../create_post.dart'; // Import CreatePostDialog
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -9,15 +10,15 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       body: Builder(
-        builder: (context) => Row( // Use Row as the main layout
+        builder: (context) => Row(
           children: [
             if (!isMobile)
               SizedBox(
-                width: 250, // Fixed width for drawer on large screens
+                width: 250,
                 child: CustomDrawer(),
               ),
             Expanded(
-              child: Column( // Use Column for the rest of the content
+              child: Column(
                 children: [
                   CustomAppBar(
                     isMobile: isMobile,
@@ -38,6 +39,17 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       drawer: isMobile ? CustomDrawer() : null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) => CreatePostDialog(),
+          );
+        },
+        icon: Icon(Icons.add),
+        label: Text('New Post'),
+        tooltip: 'Create a new post',
+      ),
     );
   }
 }

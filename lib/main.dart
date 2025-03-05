@@ -1,10 +1,28 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'Screens/Welcome/welcome_screen.dart';
 import 'constants.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if(kIsWeb)
+  {
+    await Firebase.initializeApp(options: FirebaseOptions(
+        apiKey: "AIzaSyDXNM3sLFpKzajkm7TWaUA1smV5qcJdVgY",
+        authDomain: "e-learning-platform-1a0eb.firebaseapp.com",
+        projectId: "e-learning-platform-1a0eb",
+        storageBucket: "e-learning-platform-1a0eb.firebasestorage.app",
+        messagingSenderId: "789899806730",
+        appId: "1:789899806730:web:9111831cbed415c64e37f3"
+    ));
+  }
+  await Firebase.initializeApp();
+
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);

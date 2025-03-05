@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
 import '../../Login/login_screen.dart';
@@ -12,6 +13,7 @@ class SignUpForm extends StatefulWidget {
 
 class _SignUpFormState extends State<SignUpForm> {
   final _formKey = GlobalKey<FormState>();
+  final _auth = FirebaseAuth.instance;
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -19,6 +21,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _agreeToTerms = false;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +31,6 @@ class _SignUpFormState extends State<SignUpForm> {
       key: _formKey,
       child: Column(
         children: [
-          // Username Field
           TextFormField(
             controller: _usernameController,
             keyboardType: TextInputType.name,
@@ -48,10 +50,7 @@ class _SignUpFormState extends State<SignUpForm> {
               return null;
             },
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Email Field
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -73,10 +72,7 @@ class _SignUpFormState extends State<SignUpForm> {
               return null;
             },
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Password Field
           TextFormField(
             controller: _passwordController,
             obscureText: true,
@@ -98,10 +94,7 @@ class _SignUpFormState extends State<SignUpForm> {
               return null;
             },
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Confirm Password Field
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: true,
@@ -123,10 +116,7 @@ class _SignUpFormState extends State<SignUpForm> {
               return null;
             },
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Terms & Conditions Checkbox
           Row(
             children: [
               Checkbox(
@@ -141,32 +131,50 @@ class _SignUpFormState extends State<SignUpForm> {
               const Text("I agree to the Terms & Conditions"),
             ],
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Sign Up Button (Responsive Width)
           SizedBox(
-            width: screenWidth * 0.8, // Makes button responsive
+            width: screenWidth * 0.8,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState!.validate() && _agreeToTerms) {
-                  // Proceed with sign up
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Sign Up Successful")),
-                  );
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  try {
+                    await _auth.createUserWithEmailAndPassword(
+                      email: _emailController.text,
+                      password: _passwordController.text,
+                    );
+
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    _showSuccessDialog(context);
+                  } on FirebaseAuthException catch (e) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Signup unsuccessful: ${e.message}'), backgroundColor: Colors.red),
+                    );
+                  } catch (e) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('An unexpected error occurred.'), backgroundColor: Colors.red),
+                    );
+                  }
                 } else if (!_agreeToTerms) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Please accept Terms & Conditions")),
                   );
                 }
               },
-              child: Text("Sign Up".toUpperCase()),
+              child: _isLoading ? const CircularProgressIndicator() : Text("Sign Up".toUpperCase()),
             ),
           ),
-
           const SizedBox(height: defaultPadding),
-
-          // Already Have An Account? Redirect to Login
           AlreadyHaveAnAccountCheck(
             login: false,
             press: () {
@@ -180,6 +188,36 @@ class _SignUpFormState extends State<SignUpForm> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 60),
+              const SizedBox(height: 16),
+              const Text("Account created successfully!"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

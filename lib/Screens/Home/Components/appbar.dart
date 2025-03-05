@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../profile.dart'; // Import ProfilePage
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool isMobile;
@@ -22,9 +23,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double searchBarWidth = screenWidth > 1200
-        ? 500.0 // Added .0 to make it a double
+        ? 500.0
         : screenWidth > 600
-        ? 400.0 // Added .0 to make it a double
+        ? 400.0
         : screenWidth * 0.6;
 
     return Container(
@@ -114,7 +115,14 @@ class _CustomAppBarState extends State<CustomAppBar> {
         ),
         child: IconButton(
           icon: Icon(icon, size: 30, color: Colors.white),
-          onPressed: onPressed,
+          onPressed: icon == Icons.account_circle
+              ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfilePage()),
+            );
+          }
+              : onPressed,
         ),
       ),
     );
