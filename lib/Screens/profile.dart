@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -8,7 +10,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  File? _profileImage;
+  Uint8List? _profileImageBytes;
   TextEditingController _fullNameController = TextEditingController();
   TextEditingController _mobileNumberController = TextEditingController();
   TextEditingController _aboutController = TextEditingController();
@@ -16,44 +18,78 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _projectsController = TextEditingController();
   String? _currentOccupation;
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    setState(() {
-      if (pickedFile != null) {
-        _profileImage = File(pickedFile.path);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _profileImageBytes = bytes;
+      });
+    } else {
+      print('No image selected.');
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        Map<String, dynamic> profileData = {
+          'fullName': _fullNameController.text,
+          'mobileNumber': _mobileNumberController.text,
+          'occupation': _currentOccupation,
+          'about': _aboutController.text,
+          'skills': _skillsController.text,
+          'projects': _projectsController.text,
+        };
+
+        await _firestore.collection('users').doc(user.uid).update(profileData);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully!')),
+        );
       } else {
-        print('No image selected.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not logged in.')),
+        );
       }
-    });
+    } catch (e) {
+      print('Error saving profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double maxWidth = screenWidth > 600 ? 600 : screenWidth - 32; // Limit width on larger screens
+    double maxWidth = screenWidth > 600 ? 600 : screenWidth - 32;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
         backgroundColor: Colors.deepPurple,
       ),
-      body: Center( // Center the content
+      body: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(16.0),
-          child: ConstrainedBox( // Restrict width
+          child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch fields to width
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
                   child: Stack(
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundImage: _profileImage != null
-                            ? FileImage(_profileImage!)
+                        backgroundImage: _profileImageBytes != null
+                            ? MemoryImage(_profileImageBytes!)
                             : AssetImage('assets/default_profile.png') as ImageProvider,
                       ),
                       Positioned(
@@ -129,15 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    // Save profile data (implement your logic here)
-                    print('Full Name: ${_fullNameController.text}');
-                    print('Mobile: ${_mobileNumberController.text}');
-                    print('Occupation: $_currentOccupation');
-                    print('About: ${_aboutController.text}');
-                    print('Skills: ${_skillsController.text}');
-                    print('Projects: ${_projectsController.text}');
-                  },
+                  onPressed: _saveProfile,
                   child: Text('Save Profile'),
                 ),
               ],

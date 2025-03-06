@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
 import '../../Login/login_screen.dart';
@@ -14,6 +15,7 @@ class SignUpForm extends StatefulWidget {
 class _SignUpFormState extends State<SignUpForm> {
   final _formKey = GlobalKey<FormState>();
   final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -141,10 +143,16 @@ class _SignUpFormState extends State<SignUpForm> {
                     _isLoading = true;
                   });
                   try {
-                    await _auth.createUserWithEmailAndPassword(
+                    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
                       email: _emailController.text,
                       password: _passwordController.text,
                     );
+
+                    await _firestore.collection('users').doc(userCredential.user!.uid).set({
+                      'uid': userCredential.user!.uid,
+                      'username': _usernameController.text,
+                      'email': _emailController.text,
+                    });
 
                     setState(() {
                       _isLoading = false;
@@ -194,6 +202,7 @@ class _SignUpFormState extends State<SignUpForm> {
   void _showSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevent dismissal by tapping outside
       builder: (BuildContext context) {
         return AlertDialog(
           content: Column(
