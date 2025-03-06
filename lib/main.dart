@@ -5,7 +5,7 @@ import 'Screens/Welcome/welcome_screen.dart';
 import 'constants.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
-
+import 'package:e_learning_platform/Screens/Home/home_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if(kIsWeb)
@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        MaterialPageRoute(builder: (context) =>  HomeScreen()),
       );
     });
   }

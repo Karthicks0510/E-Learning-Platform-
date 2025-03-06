@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart'; // Import file_picker
 import 'dart:io';
 
 class CreatePostDialog extends StatefulWidget {
@@ -17,25 +16,15 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
   TextEditingController _rewardValueController = TextEditingController();
 
   Future<void> _pickFiles() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
-
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        _attachments.addAll(result.files.map((file) => File(file.path!)));
-      });
-    } else {
-      // User canceled the picker
-    }
-  }
-
-  Future<void> _pickImages() async {
     final picker = ImagePicker();
-    final pickedFiles = await picker.pickMultiImage();
+    final pickedFiles = await picker.pickMultiImage(); // For images
     if (pickedFiles.isNotEmpty) {
       setState(() {
         _attachments.addAll(pickedFiles.map((pickedFile) => File(pickedFile.path)));
       });
     }
+
+    // Add logic for picking PDF files if needed
   }
 
   @override
@@ -70,18 +59,9 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                 },
               ),
               SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickFiles,
-                    child: Text('Add Files'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _pickImages,
-                    child: Text('Add Images'),
-                  ),
-                ],
+              ElevatedButton(
+                onPressed: _pickFiles,
+                child: Text('Add Attachments'),
               ),
               if (_attachments.isNotEmpty)
                 Column(
