@@ -1,25 +1,27 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'Screens/Welcome/welcome_screen.dart';
 import 'constants.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
-// import 'package:e_learning_platform/Screens/Home/home_screen.dart';
+import 'Screens/Home/home_screen.dart'; // Import HomeScreen
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if(kIsWeb)
-  {
-    await Firebase.initializeApp(options: FirebaseOptions(
-        apiKey: "AIzaSyDXNM3sLFpKzajkm7TWaUA1smV5qcJdVgY",
-        authDomain: "e-learning-platform-1a0eb.firebaseapp.com",
-        projectId: "e-learning-platform-1a0eb",
-        storageBucket: "e-learning-platform-1a0eb.firebasestorage.app",
-        messagingSenderId: "789899806730",
-        appId: "1:789899806730:web:9111831cbed415c64e37f3"
-    ));
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+        options: const FirebaseOptions(
+            apiKey: "AIzaSyDXNM3sLFpKzajkm7TWaUA1smV5qcJdVgY",
+            authDomain: "e-learning-platform-1a0eb.firebaseapp.com",
+            projectId: "e-learning-platform-1a0eb",
+            storageBucket: "e-learning-platform-1a0eb.firebasestorage.app",
+            messagingSenderId: "789899806730",
+            appId: "1:789899806730:web:9111831cbed415c64e37f3"));
+  } else {
+    await Firebase.initializeApp();
   }
-  await Firebase.initializeApp();
 
   runApp(const MyApp());
 }
@@ -50,8 +52,8 @@ class MyApp extends StatelessWidget {
           fillColor: kPrimaryLightColor,
           iconColor: kPrimaryColor,
           prefixIconColor: kPrimaryColor,
-          contentPadding:
-          EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding),
+          contentPadding: EdgeInsets.symmetric(
+              horizontal: defaultPadding, vertical: defaultPadding),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(30)),
             borderSide: BorderSide.none,
@@ -74,10 +76,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? uid = prefs.getString('uid');
+
     Timer(const Duration(seconds: 5), () {
-      Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) =>  WelcomeScreen()),
-      );
+      if (uid != null && uid.isNotEmpty) {
+        // User is logged in, navigate to HomeScreen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      } else {
+        // User is not logged in, navigate to WelcomeScreen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      }
     });
   }
 

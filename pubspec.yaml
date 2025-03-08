@@ -43,7 +43,7 @@ dependencies:
   file_picker: ^9.0.2
   cloud_firestore: ^5.6.5
   firebase_storage: ^12.4.4
-
+  shared_preferences: ^2.5.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

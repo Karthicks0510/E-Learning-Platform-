@@ -21,6 +21,41 @@ class _ProfilePageState extends State<ProfilePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot snapshot =
+      await _firestore.collection('users').doc(user.uid).get();
+      if (snapshot.exists) {
+        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _fullNameController.text = data['fullName'] ?? '';
+          _mobileNumberController.text = data['mobileNumber'] ?? '';
+          _currentOccupation = data['occupation'];
+          _aboutController.text = data['about'] ?? '';
+          _skillsController.text = data['skills'] ?? '';
+          _projectsController.text = data['projects'] ?? '';
+
+          // Load profile image if available
+          if (data.containsKey('profileImage')) {
+            try {
+              List<int> imageList = (data['profileImage'] as List).cast<int>();
+              _profileImageBytes = Uint8List.fromList(imageList);
+            } catch (e) {
+              print('Error loading profile image: $e');
+            }
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -48,7 +83,12 @@ class _ProfilePageState extends State<ProfilePage> {
           'projects': _projectsController.text,
         };
 
-        await _firestore.collection('users').doc(user.uid).update(profileData);
+        // Save profile image if available
+        if (_profileImageBytes != null) {
+          profileData['profileImage'] = _profileImageBytes!.toList();
+        }
+
+        await _firestore.collection('users').doc(user.uid).set(profileData, SetOptions(merge: true)); // Use set with merge: true to update existing data
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Profile updated successfully!')),
         );

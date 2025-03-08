@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../profile.dart'; // Import ProfilePage
+import '../../profile.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'search_results_page.dart'; // Import the SearchResultsPage file
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool isMobile;
@@ -18,6 +20,18 @@ class _CustomAppBarState extends State<CustomAppBar> {
   bool _isHoveringProfile = false;
   bool _isHoveringNotification = false;
   TextEditingController _searchController = TextEditingController();
+
+  void _performSearch(BuildContext context) {
+    String query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchResultsPage(query: query),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +72,12 @@ class _CustomAppBarState extends State<CustomAppBar> {
             width: searchBarWidth,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withAlpha((0.15 * 255).round()),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              border: Border.all(color: Colors.white.withAlpha((0.3 * 255).round())),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withAlpha((0.15 * 255).round()),
                   blurRadius: 8,
                   offset: Offset(0, 3),
                 ),
@@ -75,7 +89,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.symmetric(vertical: 15),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.15),
+                fillColor: Colors.white.withAlpha((0.15 * 255).round()),
                 hintText: 'Search...',
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.search, color: Colors.white70),
@@ -84,13 +98,19 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   borderSide: BorderSide.none,
                 ),
               ),
+              onSubmitted: (value) => _performSearch(context),
             ),
           ),
         ),
         actions: [
           _buildIconButton(Icons.notifications, _isHoveringNotification, () {}),
           SizedBox(width: 10),
-          _buildIconButton(Icons.account_circle, _isHoveringProfile, () {}),
+          _buildIconButton(Icons.account_circle, _isHoveringProfile, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfilePage()),
+            );
+          }),
           SizedBox(width: 10),
         ],
       ),
@@ -107,7 +127,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
           boxShadow: isHovering
               ? [
             BoxShadow(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withAlpha((0.6 * 255).round()),
               blurRadius: 10,
             ),
           ]
@@ -125,46 +145,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
               : onPressed,
         ),
       ),
-    );
-  }
-}
-
-class CustomDrawer extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: ListView(
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text("John Doe"),
-            accountEmail: Text("johndoe@example.com"),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: AssetImage("assets/profile.jpg"),
-            ),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade800,
-            ),
-          ),
-          _buildDrawerItem(Icons.home, "Home", context),
-          _buildDrawerItem(Icons.info, "About Us", context),
-          _buildDrawerItem(Icons.contact_mail, "Contact Us", context),
-          _buildDrawerItem(Icons.post_add, "My Posts", context),
-          Divider(),
-          _buildDrawerItem(Icons.settings, "Settings", context),
-          _buildDrawerItem(Icons.logout, "Logout", context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(IconData icon, String title, BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.deepPurple.shade800),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(context);
-      },
     );
   }
 }

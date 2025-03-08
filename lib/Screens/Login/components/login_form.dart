@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
 import '../../Signup/signup_screen.dart';
@@ -18,6 +19,25 @@ class _LoginFormState extends State<LoginForm> {
   late String _email;
   late String _password;
   bool _isLoading = false;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberMe();
+  }
+
+  Future<void> _loadRememberMe() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _rememberMe = prefs.getBool('rememberMe') ?? false;
+    });
+  }
+
+  Future<void> _saveRememberMe(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rememberMe', value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +96,19 @@ class _LoginFormState extends State<LoginForm> {
               child: const Text('Forgot Password?'),
             ),
           ),
+          CheckboxListTile(
+            title: const Text("Remember Me"),
+            value: _rememberMe,
+            onChanged: (value) {
+              setState(() {
+                _rememberMe = value!;
+                _saveRememberMe(value);
+              });
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: kPrimaryColor,
+          ),
+          const SizedBox(height: defaultPadding),
           if (_isLoading)
             const CircularProgressIndicator()
           else
@@ -87,10 +120,14 @@ class _LoginFormState extends State<LoginForm> {
                     _isLoading = true;
                   });
                   try {
-                    await _auth.signInWithEmailAndPassword(
+                    final userCredential = await _auth.signInWithEmailAndPassword(
                       email: _email,
                       password: _password,
                     );
+                    if (_rememberMe) {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('uid', userCredential.user!.uid);
+                    }
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -155,7 +192,7 @@ class _LoginFormState extends State<LoginForm> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
@@ -164,7 +201,7 @@ class _LoginFormState extends State<LoginForm> {
                 try {
                   await _auth.sendPasswordResetEmail(
                       email: _resetEmailController.text);
-                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Password reset email sent.'),
