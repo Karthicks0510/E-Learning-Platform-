@@ -1,4 +1,4 @@
-// home_screen.dart
+/// home_screen.dart
 import 'package:e_learning_platform/Screens/Home/Components/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'Components/appbar.dart';
@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'all_posts.dart';
+import 'package:animate_do/animate_do.dart'; // Import animate_do
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -41,7 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: CustomDrawer(),
             ),
           Expanded(
-            child: Padding(padding: EdgeInsets.all(8), child: AllPosts()),
+            child: FadeIn( // Add FadeIn animation for AllPosts
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: AllPosts(),
+              ),
+            ),
           ),
         ],
       ),
@@ -59,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _fabScale = 1.0;
               });
               showDialog(
-                context: context, // Use the current context
+                context: context,
                 builder: (BuildContext dialogContext) => CreatePostDialog(),
               );
             });
@@ -72,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
 
 class CreatePostDialog extends StatefulWidget {
   @override

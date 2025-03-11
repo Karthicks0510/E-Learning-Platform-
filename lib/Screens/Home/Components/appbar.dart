@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../profile.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-import 'search_results_page.dart'; // Import the SearchResultsPage file
+import '../../profile.dart'; // Adjust path if needed
+import 'search_results_page.dart'; // Adjust path if needed
+import 'notification.dart'; // Import the notification.dart file
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool isMobile;
@@ -18,7 +18,6 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
 
 class _CustomAppBarState extends State<CustomAppBar> {
   bool _isHoveringProfile = false;
-  bool _isHoveringNotification = false;
   TextEditingController _searchController = TextEditingController();
 
   void _performSearch(BuildContext context) {
@@ -103,7 +102,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
           ),
         ),
         actions: [
-          _buildIconButton(Icons.notifications, _isHoveringNotification, () {}),
+          NotificationBell(), // Use the NotificationBell widget from notification.dart
           SizedBox(width: 10),
           _buildIconButton(Icons.account_circle, _isHoveringProfile, () {
             Navigator.push(
@@ -119,8 +118,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
   Widget _buildIconButton(IconData icon, bool isHovering, VoidCallback onPressed) {
     return MouseRegion(
-      onEnter: (_) => setState(() => isHovering = true),
-      onExit: (_) => setState(() => isHovering = false),
+      onEnter: (_) => setState(() => _isHoveringProfile = true),
+      onExit: (_) => setState(() => _isHoveringProfile = false),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
         decoration: BoxDecoration(

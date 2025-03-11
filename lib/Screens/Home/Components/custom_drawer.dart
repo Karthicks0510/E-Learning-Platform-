@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'my_posts.dart'; // Import the MyPostsScreen
+import 'package:animate_do/animate_do.dart';
+import 'my_posts.dart';
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -61,38 +62,109 @@ class _CustomDrawerState extends State<CustomDrawer> {
       backgroundColor: Colors.white,
       child: ListView(
         children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(_userName ?? "Guest"),
-            accountEmail: Text(_userEmail ?? ""),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: AssetImage("assets/profile.jpg"),
-            ),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade800,
+          FadeInDown(
+            child: UserAccountsDrawerHeader(
+              accountName: Text(_userName ?? "Guest",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              accountEmail: Text(_userEmail ?? "",
+                  style: TextStyle(fontSize: 14)),
+              currentAccountPicture: BounceInDown(
+                child: CircleAvatar(
+                  backgroundImage: AssetImage("assets/profile.jpg"),
+                  radius: 30,
+                ),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.deepPurple.shade800, Colors.purple.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
             ),
           ),
-          _buildDrawerItem(Icons.home, "Home", context),
-          _buildDrawerItem(Icons.info, "About Us", context),
-          _buildDrawerItem(Icons.contact_mail, "Contact Us", context),
-          _buildDrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()), // Pass MyPostsScreen
-          Divider(),
-          _buildDrawerItem(Icons.settings, "Settings", context),
-          _buildDrawerItem(Icons.logout, "Logout", context),
+          SizedBox(height: 10),
+          ..._buildDrawerItems(context),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String title, BuildContext context, [Widget? navigateTo]) { //added optional widget parameter
-    return ListTile(
-      leading: Icon(icon, color: Colors.deepPurple.shade800),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(context);
-        if (navigateTo != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => navigateTo)); // navigate if widget is passed.
-        }
-      },
+  List<Widget> _buildDrawerItems(BuildContext context) {
+    List<DrawerItem> items = [
+      DrawerItem(Icons.home, "Home", context),
+      DrawerItem(Icons.info, "About Us", context),
+      DrawerItem(Icons.contact_mail, "Contact Us", context),
+      DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
+      DrawerItem(Icons.settings, "Settings", context),
+      DrawerItem(Icons.logout, "Logout", context),
+    ];
+
+    return items
+        .asMap()
+        .entries
+        .map((entry) => _buildAnimatedDrawerItem(entry.key, entry.value))
+        .toList();
+  }
+
+  Widget _buildAnimatedDrawerItem(int index, DrawerItem item) {
+    bool isHovering = false;
+
+    return FadeInLeft(
+      delay: Duration(milliseconds: 50 * index),
+      child: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              if (item.navigateTo != null) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => item.navigateTo!));
+              }
+            },
+            onHover: (hovered) {
+              setState(() {
+                isHovering = hovered;
+              });
+            },
+            child: AnimatedContainer( // Add AnimatedContainer for zoom effect
+              duration: Duration(milliseconds: 200),
+              transform: isHovering ? Matrix4.identity().scaled(1.05) : Matrix4.identity(),
+              child: ListTile(
+                leading: Icon(item.icon, color: Colors.deepPurple.shade800),
+                title: Text(item.title,
+                  style: TextStyle(
+                    color: isHovering ? Colors.white : null,
+                  ),
+                ),
+                tileColor: isHovering ? Colors.deepPurple.shade400 : Colors.transparent,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
+}
+
+class DrawerItem {
+  final IconData icon;
+  final String title;
+  final BuildContext context;
+  final Widget? navigateTo;
+
+  DrawerItem(this.icon, this.title, this.context, [this.navigateTo]);
 }
