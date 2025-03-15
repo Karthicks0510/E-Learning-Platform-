@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:animate_do/animate_do.dart';
 import 'my_posts.dart';
+import 'search_user.dart'; // Import the search user screen
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -107,6 +108,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
       DrawerItem(Icons.info, "About Us", context),
       DrawerItem(Icons.contact_mail, "Contact Us", context),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
+      DrawerItem(Icons.search, "Search User", context, SearchUser()), // Added Search User
       DrawerItem(Icons.settings, "Settings", context),
       DrawerItem(Icons.logout, "Logout", context),
     ];
@@ -140,7 +142,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 isHovering = hovered;
               });
             },
-            child: AnimatedContainer( // Add AnimatedContainer for zoom effect
+            child: AnimatedContainer(
               duration: Duration(milliseconds: 200),
               transform: isHovering ? Matrix4.identity().scaled(1.05) : Matrix4.identity(),
               child: ListTile(

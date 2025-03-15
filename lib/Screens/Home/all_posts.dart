@@ -25,14 +25,25 @@ class _AllPostsState extends State<AllPosts> {
           return Center(child: Text('No posts yet.'));
         }
 
-        return ListView.builder(
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            DocumentSnapshot document = snapshot.data!.docs[index];
-            Map<String, dynamic> data =
-            document.data() as Map<String, dynamic>;
-            return PostItem(data: data, document: document);
-          },
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = constraints.maxWidth > 600 ? 300.0 : 200.0;
+              return Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: snapshot.data!.docs.map((document) {
+                  Map<String, dynamic> data =
+                  document.data() as Map<String, dynamic>;
+                  return SizedBox(
+                    width: cardWidth,
+                    child: PostItem(data: data, document: document),
+                  );
+                }).toList(),
+              );
+            },
+          ),
         );
       },
     );
@@ -80,7 +91,7 @@ class _PostItemState extends State<PostItem> {
           });
         },
         child: Container(
-          margin: EdgeInsets.all(8.0),
+          margin: EdgeInsets.symmetric(vertical: 5), //Removed horizontal margin
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
             gradient: LinearGradient(
