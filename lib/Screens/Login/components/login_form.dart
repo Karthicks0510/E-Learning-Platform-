@@ -119,19 +119,36 @@ class _LoginFormState extends State<LoginForm> {
                   setState(() {
                     _isLoading = true;
                   });
+
                   try {
                     final userCredential = await _auth.signInWithEmailAndPassword(
                       email: _email,
                       password: _password,
                     );
-                    if (_rememberMe) {
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await prefs.setString('uid', userCredential.user!.uid);
+
+                    User? user = userCredential.user;
+
+                    if (user != null) {
+                      if (user.emailVerified) {
+                        if (_rememberMe) {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('uid', user.uid);
+                        }
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
+                        );
+                      } else {
+                        await user.sendEmailVerification();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please verify your email. A verification link has been sent."),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
                     }
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()),
-                    );
                   } on FirebaseAuthException catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -139,20 +156,18 @@ class _LoginFormState extends State<LoginForm> {
                         backgroundColor: Colors.red,
                       ),
                     );
-                    setState(() {
-                      _isLoading = false;
-                    });
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text('An unexpected error occurred.'),
                         backgroundColor: Colors.red,
                       ),
                     );
-                    setState(() {
-                      _isLoading = false;
-                    });
                   }
+
+                  setState(() {
+                    _isLoading = false;
+                  });
                 }
               },
               child: Text(

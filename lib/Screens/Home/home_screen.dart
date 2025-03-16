@@ -1,4 +1,4 @@
-/// home_screen.dart
+// home_screen.dart
 import 'package:e_learning_platform/Screens/Home/Components/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'Components/appbar.dart';
@@ -7,7 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'all_posts.dart';
-import 'package:animate_do/animate_do.dart'; // Import animate_do
+import 'package:animate_do/animate_do.dart';
+import 'components/offer_of_the_day_dialog.dart'; // Import the new dialog file
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -16,6 +17,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   double _fabScale = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _showOfferOfTheDayDialog();
+  }
+
+  Future<void> _showOfferOfTheDayDialog() async {
+    await Future.delayed(Duration.zero); // Ensure build is complete.
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => OfferOfTheDayDialog(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: CustomDrawer(),
             ),
           Expanded(
-            child: FadeIn( // Add FadeIn animation for AllPosts
+            child: FadeIn(
               child: Padding(
                 padding: EdgeInsets.all(8),
                 child: AllPosts(),
@@ -78,7 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
 
 class CreatePostDialog extends StatefulWidget {
   @override

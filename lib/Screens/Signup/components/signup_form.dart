@@ -62,7 +62,7 @@ class _SignUpFormState extends State<SignUpForm> {
               hintText: "Your email",
               prefixIcon: Padding(
                 padding: EdgeInsets.all(defaultPadding),
-                child: Icon(Icons.email),
+                child: Icon(Icons.email,), // Updated color to purple
               ),
             ),
             validator: (value) {
@@ -148,16 +148,23 @@ class _SignUpFormState extends State<SignUpForm> {
                       password: _passwordController.text,
                     );
 
+                    // Send Email Verification
+                    await userCredential.user?.sendEmailVerification();
+
+                    // Store user data in Firestore
                     await _firestore.collection('users').doc(userCredential.user!.uid).set({
                       'uid': userCredential.user!.uid,
                       'username': _usernameController.text,
                       'email': _emailController.text,
+                      'emailVerified': false, // Initially false
                     });
 
                     setState(() {
                       _isLoading = false;
                     });
-                    _showSuccessDialog(context);
+
+                    // Show Email Verification Dialog
+                    _showVerificationDialog(context);
                   } on FirebaseAuthException catch (e) {
                     setState(() {
                       _isLoading = false;
@@ -199,18 +206,27 @@ class _SignUpFormState extends State<SignUpForm> {
     );
   }
 
-  void _showSuccessDialog(BuildContext context) {
+  // 🔹 Show Verification Dialog
+  void _showVerificationDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissal by tapping outside
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 60),
+              const Icon(Icons.email, color: Colors.purple, size: 60), // Updated color to purple
               const SizedBox(height: 16),
-              const Text("Account created successfully!"),
+              const Text(
+                "Verification Email Sent!",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Please check your email and verify your account before logging in.",
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
           actions: [

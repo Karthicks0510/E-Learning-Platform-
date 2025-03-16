@@ -30,17 +30,19 @@ class _AllPostsState extends State<AllPosts> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final cardWidth = constraints.maxWidth > 600 ? 300.0 : 200.0;
-              return Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: snapshot.data!.docs.map((document) {
-                  Map<String, dynamic> data =
-                  document.data() as Map<String, dynamic>;
-                  return SizedBox(
-                    width: cardWidth,
-                    child: PostItem(data: data, document: document),
-                  );
-                }).toList(),
+              return SingleChildScrollView( // Added scrollable option
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: snapshot.data!.docs.map((document) {
+                    Map<String, dynamic> data =
+                    document.data() as Map<String, dynamic>;
+                    return SizedBox(
+                      width: cardWidth,
+                      child: PostItem(data: data, document: document),
+                    );
+                  }).toList(),
+                ),
               );
             },
           ),
@@ -91,7 +93,7 @@ class _PostItemState extends State<PostItem> {
           });
         },
         child: Container(
-          margin: EdgeInsets.symmetric(vertical: 5), //Removed horizontal margin
+          margin: EdgeInsets.symmetric(vertical: 5),
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -179,59 +181,61 @@ class PostDetailsPage extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FadeInLeft(
-                  child: Text('Title: ${data['title'] ?? 'No Title'}',
-                      style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                ),
-                SizedBox(height: 10),
-                FadeInLeft(
-                  child: Text(
-                      'Description: ${data['description'] ?? 'No Description'}'),
-                ),
-                SizedBox(height: 10),
-                FadeInLeft(
-                  child: Text(
-                      'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}'),
-                ),
-                SizedBox(height: 10),
-                FadeInLeft(
-                  child: Row(
-                    children: [
-                      Text('Attachments: '),
-                      IconButton(
-                        icon: Icon(Icons.remove_red_eye),
+            child: SingleChildScrollView( //Added scrollable option here too
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FadeInLeft(
+                    child: Text('Title: ${data['title'] ?? 'No Title'}',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+                  SizedBox(height: 10),
+                  FadeInLeft(
+                    child: Text(
+                        'Description: ${data['description'] ?? 'No Description'}'),
+                  ),
+                  SizedBox(height: 10),
+                  FadeInLeft(
+                    child: Text(
+                        'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}'),
+                  ),
+                  SizedBox(height: 10),
+                  FadeInLeft(
+                    child: Row(
+                      children: [
+                        Text('Attachments: '),
+                        IconButton(
+                          icon: Icon(Icons.remove_red_eye),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content:
+                                  Text('Attachment view not implemented yet.')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Align(
+                    alignment: Alignment.center,
+                    child: FadeInUp(
+                      child: ElevatedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content:
-                                Text('Attachment view not implemented yet.')),
+                                Text('Accept button not implemented yet.')),
                           );
                         },
+                        child: Text('Accept'),
                       ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.center,
-                  child: FadeInUp(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content:
-                              Text('Accept button not implemented yet.')),
-                        );
-                      },
-                      child: Text('Accept'),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
