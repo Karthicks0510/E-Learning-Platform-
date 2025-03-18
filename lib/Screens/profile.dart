@@ -120,33 +120,17 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-            color: Theme.of(context).brightness == Brightness.light
-                ? Colors.white70
-                : Colors.grey.shade400),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)), // Using theme colors
         enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white30
-                    : Colors.grey.shade700)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)), // Using theme colors
         focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white
-                    : Colors.grey.shade400)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)), // Using theme colors
         border: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white30
-                    : Colors.grey.shade700)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)), // Using theme colors
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.light
-            ? Colors.white12
-            : Colors.grey.shade900.withOpacity(0.5),
+        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.5), // Using theme colors
       ),
-      style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
-              : Colors.grey.shade300),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface), // Using theme colors
       maxLines: maxLines,
       keyboardType: keyboardType,
     );
@@ -158,33 +142,17 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: InputDecoration(
         labelText: 'Designation',
         labelStyle: TextStyle(
-            color: Theme.of(context).brightness == Brightness.light
-                ? Colors.white70
-                : Colors.grey.shade400),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)), // Using theme colors
         enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white30
-                    : Colors.grey.shade700)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)), // Using theme colors
         focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white
-                    : Colors.grey.shade400)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)), // Using theme colors
         border: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white30
-                    : Colors.grey.shade700)),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)), // Using theme colors
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.light
-            ? Colors.white12
-            : Colors.grey.shade900.withOpacity(0.5),
+        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.5), // Using theme colors
       ),
-      style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
-              : Colors.grey.shade300),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface), // Using theme colors
       items: <String>[
         'Student',
         'Teacher',
@@ -198,10 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
           value: value,
           child: Text(
             value,
-            style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.black87
-                    : Colors.grey.shade300),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface), // Using theme colors
           ),
         );
       }).toList(),
@@ -212,11 +177,10 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
           : null,
-      dropdownColor: Theme.of(context).brightness == Brightness.light
-          ? Colors.grey.shade200
-          : Colors.grey.shade800,
+      dropdownColor: Theme.of(context).colorScheme.surface, // Using theme colors
     );
   }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -228,18 +192,12 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: FadeInDown(
-            child: Text('Profile',
-                style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.light
-                        ? Colors.white
-                        : Colors.grey.shade300))),
-        iconTheme: IconThemeData(
-            color: Theme.of(context).brightness == Brightness.light
-                ? Colors.white
-                : Colors.grey.shade300),
+            child: Text('Profile', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary))), // Using theme colors
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary), // Using theme colors
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.cancel : Icons.edit),
+
             onPressed: () {
               setState(() {
                 _isEditing = !_isEditing;
@@ -250,33 +208,27 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: Stack(
         children: [
-          FadeIn(
-            child: Image.asset(
-              'assets/icons/default_profile.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).brightness == Brightness.light
-                      ? Colors.deepPurple.withOpacity(0.8)
-                      : Colors.grey.shade800.withOpacity(0.8),
-                  Theme.of(context).brightness == Brightness.light
-                      ? Colors.purple.withOpacity(0.6)
-                      : Colors.grey.shade900.withOpacity(0.6),
-                  Theme.of(context).brightness == Brightness.light
-                      ? Colors.blue.withOpacity(0.5)
-                      : Colors.grey.shade700.withOpacity(0.5),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
+      FadeIn(
+      child: Image.asset(
+      'assets/icons/default_profile.png',
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    ),
+    Container(
+    decoration: BoxDecoration(
+    gradient: LinearGradient(
+    colors: [
+    Theme.of(context).colorScheme.primary.withOpacity(0.8), // Using theme colors
+    Theme.of(context).colorScheme.secondary.withOpacity(0.6), // Using theme colors
+      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5), // Using theme colors
+    ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    ),
+    ),
           Center(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(16.0),
@@ -306,13 +258,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                     padding: EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.blue,
+                                      color: Theme.of(context).colorScheme.primary, // Using theme colors
                                     ),
                                     child: Icon(Icons.edit,
-                                        color: Theme.of(context).brightness ==
-                                            Brightness.light
-                                            ? Colors.white
-                                            : Colors.grey.shade300),
+                                        color: Theme.of(context).colorScheme.onPrimary), // Using theme colors
                                   ),
                                 ),
                               ),
@@ -352,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: ElevatedButton(
                           onPressed: _saveProfile,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueAccent,
+                            backgroundColor: Theme.of(context).colorScheme.primary, // Using theme colors
                             padding: EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30)),
@@ -360,10 +309,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Text('Save Profile',
                               style: TextStyle(
                                   fontSize: 18,
-                                  color: Theme.of(context).brightness ==
-                                      Brightness.light
-                                      ? Colors.white
-                                      : Colors.grey.shade300)),
+                                  color: Theme.of(context).colorScheme.onPrimary)), // Using theme colors
                         ),
                       ),
                   ],

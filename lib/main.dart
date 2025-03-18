@@ -6,10 +6,17 @@ import 'Screens/Welcome/welcome_screen.dart';
 import 'constants.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
-import 'Screens/Home/home_screen.dart'; // Import HomeScreen
+import 'Screens/Home/home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://ovsinoxzwotfbhnemetd.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92c2lub3h6d290ZmJobmVtZXRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIxMzUzMjMsImV4cCI6MjA1NzcxMTMyM30.nyzMEoabwWNcO_Rf_r4-crktMpRxEEZcCsrm9JAGZHk',
+  );
+
   if (kIsWeb) {
     await Firebase.initializeApp(
         options: const FirebaseOptions(
@@ -60,7 +67,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(), // Set SplashScreen as the initial screen
+      home: const SplashScreen(),
     );
   }
 }
@@ -85,13 +92,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
     Timer(const Duration(seconds: 5), () {
       if (uid != null && uid.isNotEmpty) {
-        // User is logged in, navigate to HomeScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
-        // User is not logged in, navigate to WelcomeScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const WelcomeScreen()),
@@ -106,11 +111,11 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: Colors.white,
       body: Center(
         child: Lottie.asset(
-          'assets/splash.json', // Ensure the correct path
-          width: 300, // Adjust size as needed
+          'assets/splash.json',
+          width: 300,
           fit: BoxFit.cover,
-          repeat: true, // Animation will loop
-          animate: true, // Auto-play animation
+          repeat: true,
+          animate: true,
         ),
       ),
     );

@@ -30,7 +30,7 @@ class _AllPostsState extends State<AllPosts> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final cardWidth = constraints.maxWidth > 600 ? 300.0 : 200.0;
-              return SingleChildScrollView( // Added scrollable option
+              return SingleChildScrollView(
                 child: Wrap(
                   spacing: 8.0,
                   runSpacing: 8.0,
@@ -139,7 +139,6 @@ class _PostItemState extends State<PostItem> {
                   ],
                 ),
               ),
-              // You can add more elements here (e.g., description)
             ],
           ),
         ),
@@ -156,13 +155,14 @@ class PostDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Post Details'),
-        backgroundColor: Colors.purple,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<DocumentSnapshot>(
-        future:
-        FirebaseFirestore.instance.collection('posts').doc(postId).get(),
+        future: FirebaseFirestore.instance.collection('posts').doc(postId).get(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Something went wrong'));
@@ -176,70 +176,77 @@ class PostDetailsPage extends StatelessWidget {
             return Center(child: Text('Post not found.'));
           }
 
-          Map<String, dynamic> data =
-          snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView( //Added scrollable option here too
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FadeInLeft(
-                    child: Text('Title: ${data['title'] ?? 'No Title'}',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
+          return Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue[800]!, Colors.purple[800]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  SizedBox(height: 10),
-                  FadeInLeft(
-                    child: Text(
-                        'Description: ${data['description'] ?? 'No Description'}'),
-                  ),
-                  SizedBox(height: 10),
-                  FadeInLeft(
-                    child: Text(
-                        'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}'),
-                  ),
-                  SizedBox(height: 10),
-                  FadeInLeft(
-                    child: Row(
+                ),
+              ),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Attachments: '),
-                        IconButton(
-                          icon: Icon(Icons.remove_red_eye),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                  Text('Attachment view not implemented yet.')),
-                            );
-                          },
+                        Text(
+                          data['title'] ?? 'No Title',
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        SizedBox(height: 20),
+                        _buildDetailItem(Icons.description, 'Description', data['description'] ?? 'No Description'),
+                        SizedBox(height: 10),
+                        _buildDetailItem(Icons.attach_money, 'Rewards', '${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}'),
+                        SizedBox(height: 10),
+                        _buildDetailItem(Icons.language, 'Preferred Languages', data['preferredLanguages'] != null ? data['preferredLanguages'].join(', ') : 'None'),
+                        SizedBox(height: 20),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            child: Text('Accept', style: TextStyle(fontSize: 18)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(height: 20),
-                  Align(
-                    alignment: Alignment.center,
-                    child: FadeInUp(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content:
-                                Text('Accept button not implemented yet.')),
-                          );
-                        },
-                        child: Text('Accept'),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildDetailItem(IconData icon, String title, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.white70),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              SizedBox(height: 4),
+              Text(value, style: TextStyle(color: Colors.white70)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

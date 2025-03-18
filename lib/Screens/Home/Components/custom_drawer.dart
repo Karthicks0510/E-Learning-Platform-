@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:animate_do/animate_do.dart';
 import 'my_posts.dart';
-import 'search_user.dart'; // Import the search user screen
+import 'search_user.dart';
+import 'chat_screen.dart'; // Import the chat screen
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -26,18 +27,15 @@ class _CustomDrawerState extends State<CustomDrawer> {
     User? user = _auth.currentUser;
     if (user != null) {
       try {
-        DocumentSnapshot userDoc =
-        await _firestore.collection('users').doc(user.uid).get();
-
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
           setState(() {
             _userName = userDoc.get('username');
             _userEmail = user.email;
           });
         } else {
-          print("User document not found.");
           setState(() {
-            _userName = "User Not found";
+            _userName = "User Not Found";
             _userEmail = "";
           });
         }
@@ -53,7 +51,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
         _userName = "Guest";
         _userEmail = "";
       });
-      print("User not logged in.");
     }
   }
 
@@ -65,10 +62,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
         children: [
           FadeInDown(
             child: UserAccountsDrawerHeader(
-              accountName: Text(_userName ?? "Guest",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              accountEmail: Text(_userEmail ?? "",
-                  style: TextStyle(fontSize: 14)),
+              accountName: Text(
+                _userName ?? "Guest",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              accountEmail: Text(
+                _userEmail ?? "",
+                style: TextStyle(fontSize: 14),
+              ),
               currentAccountPicture: BounceInDown(
                 child: CircleAvatar(
                   backgroundImage: AssetImage("assets/profile.jpg"),
@@ -105,10 +106,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
   List<Widget> _buildDrawerItems(BuildContext context) {
     List<DrawerItem> items = [
       DrawerItem(Icons.home, "Home", context),
+      DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? "")), // Chat with currentUserId
       DrawerItem(Icons.info, "About Us", context),
       DrawerItem(Icons.contact_mail, "Contact Us", context),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
-      DrawerItem(Icons.search, "Search User", context, SearchUser()), // Added Search User
+      DrawerItem(Icons.search, "Search User", context, SearchUser()),
       DrawerItem(Icons.settings, "Settings", context),
       DrawerItem(Icons.logout, "Logout", context),
     ];
@@ -132,9 +134,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
               Navigator.pop(context);
               if (item.navigateTo != null) {
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => item.navigateTo!));
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => item.navigateTo!,
+                  ),
+                );
               }
             },
             onHover: (hovered) {
@@ -147,10 +151,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
               transform: isHovering ? Matrix4.identity().scaled(1.05) : Matrix4.identity(),
               child: ListTile(
                 leading: Icon(item.icon, color: Colors.deepPurple.shade800),
-                title: Text(item.title,
-                  style: TextStyle(
-                    color: isHovering ? Colors.white : null,
-                  ),
+                title: Text(
+                  item.title,
+                  style: TextStyle(color: isHovering ? Colors.white : null),
                 ),
                 tileColor: isHovering ? Colors.deepPurple.shade400 : Colors.transparent,
               ),
