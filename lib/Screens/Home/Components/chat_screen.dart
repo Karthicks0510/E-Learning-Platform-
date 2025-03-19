@@ -1,7 +1,10 @@
 // chat_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'chat_room.dart';
+import '../home_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String currentUserId;
@@ -17,35 +20,24 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<DocumentSnapshot> _searchResults = [];
-  List<DocumentSnapshot> _recentChats = [];
+  List<DocumentSnapshot> _chatRooms = [];
 
   @override
   void initState() {
     super.initState();
-    _loadRecentChats();
+    _fetchChatRooms();
   }
 
-  Future<void> _loadRecentChats() async {
+  Future<void> _fetchChatRooms() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('chats')
-          .where(FieldPath.documentId, isGreaterThanOrEqualTo: '${widget.currentUserId}_')
-          .where(FieldPath.documentId, isLessThan: '${widget.currentUserId}_\uf7ff')
-          .get();
-
-      final querySnapshot2 = await _firestore
-          .collection('chats')
-          .where(FieldPath.documentId, isGreaterThanOrEqualTo: '_${widget.currentUserId}')
-          .where(FieldPath.documentId, isLessThan: '_\uf7ff${widget.currentUserId}')
-          .get();
-
-      List<DocumentSnapshot> allChats = [...querySnapshot.docs, ...querySnapshot2.docs];
-
+      final querySnapshot = await _firestore.collection('chats').get();
       setState(() {
-        _recentChats = allChats;
+        _chatRooms = querySnapshot.docs.where((doc) {
+          return doc.id.contains('${widget.currentUserId}_') || doc.id.contains('_${widget.currentUserId}');
+        }).toList();
       });
     } catch (e) {
-      print('Error loading recent chats: $e');
+      print('Error fetching chat rooms: $e');
     }
   }
 
@@ -72,9 +64,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startChat(String otherUserId, String otherUserName) {
-    String chatId = widget.currentUserId.compareTo(otherUserId) < 0
-        ? '${widget.currentUserId}_$otherUserId'
-        : '$otherUserId\_${widget.currentUserId}';
+    List<String> userIds = [widget.currentUserId, otherUserId];
+    userIds.sort();
+    String chatId = '${userIds[0]}_${userIds[1]}';
 
     Navigator.push(
       context,
@@ -91,9 +83,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('Current User ID: ${widget.currentUserId}');
     return Scaffold(
       appBar: AppBar(
         title: Text('Chats'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+                (route) => false,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -110,142 +111,53 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: ListView.builder(
-                itemCount: _searchResults.isNotEmpty
-                    ? _searchResults.length
-                    : _recentChats.length,
+              child: _searchResults.isNotEmpty
+                  ? ListView.builder(
+                itemCount: _searchResults.length,
                 itemBuilder: (context, index) {
-                  if (_searchResults.isNotEmpty) {
-                    final user = _searchResults[index].data() as Map<String, dynamic>;
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(user['username'][0].toUpperCase()),
-                      ),
-                      title: Text(user['username']),
-                      onTap: () => _startChat(_searchResults[index].id, user['username']),
-                    );
-                  } else {
-                    final chatId = _recentChats[index].id;
-                    List<String> parts = chatId.split('_');
-                    String otherUserId = parts[0] == widget.currentUserId ? parts[1] : parts[0];
+                  final user = _searchResults[index].data() as Map<String, dynamic>;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      child: Text(user['username'][0].toUpperCase()),
+                    ),
+                    title: Text(user['username']),
+                    onTap: () => _startChat(_searchResults[index].id, user['username']),
+                  );
+                },
+              )
+                  : ListView.builder(
+                itemCount: _chatRooms.length,
+                itemBuilder: (context, index) {
+                  final chatId = _chatRooms[index].id;
+                  final otherUserId = chatId.split('_').first == widget.currentUserId
+                      ? chatId.split('_').last
+                      : chatId.split('_').first;
 
-                    return FutureBuilder<DocumentSnapshot>(
-                      future: _firestore.collection('users').doc(otherUserId).get(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return ListTile(title: Text("Loading..."));
-                        }
-                        if (snapshot.hasData && snapshot.data!.exists) {
-                          final userData = snapshot.data!.data() as Map<String, dynamic>;
-                          return ListTile(
-                            leading: CircleAvatar(
-                              child: Text(userData['username'][0].toUpperCase()),
-                            ),
-                            title: Text(userData['username']),
-                            onTap: () => _startChat(otherUserId, userData['username']),
-                          );
-                        } else {
-                          return ListTile(title: Text("User not found"));
-                        }
-                      },
-                    );
-                  }
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: _firestore.collection('users').doc(otherUserId).get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return ListTile(title: Text('Loading...'));
+                      }
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        final userData = snapshot.data!.data() as Map<String, dynamic>;
+                        return ListTile(
+                          leading: CircleAvatar(
+                            child: Text(userData['username'][0].toUpperCase()),
+                          ),
+                          title: Text(userData['username']),
+                          onTap: () => _startChat(otherUserId, userData['username']),
+                        );
+                      } else {
+                        return ListTile(title: Text('User not found'));
+                      }
+                    },
+                  );
                 },
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ChatRoom extends StatefulWidget {
-  final String chatId;
-  final String otherUserId;
-  final String otherUserName;
-  final String currentUserId;
-
-  ChatRoom({required this.chatId, required this.otherUserId, required this.otherUserName, required this.currentUserId});
-
-  @override
-  _ChatRoomState createState() => _ChatRoomState();
-}
-
-class _ChatRoomState extends State<ChatRoom> {
-  final TextEditingController _messageController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  void _sendMessage() {
-    if (_messageController.text.isNotEmpty) {
-      _firestore.collection('chats').doc(widget.chatId).collection('messages').add({
-        'text': _messageController.text,
-        'senderId': widget.currentUserId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      _messageController.clear();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.otherUserName),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder(
-              stream: _firestore.collection('chats').doc(widget.chatId).collection('messages').orderBy('timestamp').snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.hasData) {
-                  return ListView.builder(
-                    itemCount: snapshot.data!.docs.length,
-                    itemBuilder: (context, index) {
-                      final message = snapshot.data!.docs[index];
-                      final data = message.data() as Map<String, dynamic>;
-                      final isMe = data['senderId'] == widget.currentUserId;
-                      return Align(
-                        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: isMe ? Colors.blue[200] : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(data['text']),
-                        ),
-                      );
-                    },
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error loading messages'));
-                } else {
-                  return Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(hintText: 'Type a message...'),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

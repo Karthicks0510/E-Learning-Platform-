@@ -16,6 +16,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   double _minPrice = 0;
   double _maxPrice = 1000;
   String _selectedCurrency = 'All';
+  String _selectedLanguage = 'All';
   List<DocumentSnapshot> _initialResults = [];
   List<DocumentSnapshot> _filteredDocs = [];
 
@@ -92,6 +93,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
             },
           ),
           _buildCurrencyDropdown(),
+          _buildLanguageDropdown(),
         ],
       ),
     );
@@ -156,6 +158,38 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
     );
   }
 
+  Widget _buildLanguageDropdown() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Language: '),
+          DropdownButton<String>(
+            value: _selectedLanguage,
+            onChanged: (value) {
+              setState(() {
+                _selectedLanguage = value!;
+                _applyFilters();
+              });
+            },
+            items: ['All', 'English', 'Spanish', 'French', 'Hindi']
+                .map((language) =>
+                DropdownMenuItem(
+                  value: language,
+                  child: Text(language),
+                ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildResultList() {
     if (_filteredDocs.isEmpty) {
       return Center(
@@ -165,7 +199,6 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 600) {
-          // Mobile layout: ListView.builder
           return ListView.builder(
             itemCount: _filteredDocs.length,
             itemBuilder: (context, index) {
@@ -176,7 +209,6 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
             },
           );
         } else {
-          // Desktop/Tablet layout: Wrap
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Wrap(
@@ -198,91 +230,83 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   Widget _buildAnimatedCard(double cardWidth, DocumentSnapshot document,
       Map<String, dynamic> data) {
     return StatefulBuilder(
-      builder: (context, setState) {
-        bool isHovered = false;
-        return MouseRegion(
+        builder: (context, setState) {
+      bool isHovered = false;
+      return MouseRegion(
           onEnter: (_) => setState(() => isHovered = true),
-          onExit: (_) => setState(() => isHovered = false),
-          child: AnimatedScale(
-            duration: Duration(milliseconds: 200),
-            scale: isHovered ? 1.05 : 1.0,
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 200),
-              width: cardWidth > 0 ? cardWidth : MediaQuery
-                  .of(context)
-                  .size
-                  .width * 0.9,
-              margin: EdgeInsets.symmetric(
-                  vertical: 8, horizontal: cardWidth > 0 ? 0 : MediaQuery
-                  .of(context)
-                  .size
-                  .width * 0.05),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isHovered
-                      ? [Colors.blue[600]!, Colors.purple[600]!]
-                      : [Colors.blue[400]!, Colors.purple[400]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(isHovered ? 0.7 : 0.5),
-                    spreadRadius: isHovered ? 3 : 2,
-                    blurRadius: isHovered ? 7 : 5,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FadeInLeft(
-                      child: Text(
-                        data['title'] ?? 'No Title',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    FadeInLeft(
-                      child: Text(
-                        'Rewards: ${data['rewards'] ??
-                            'N/A'} ${data['currency'] ?? ''}',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PostDetailsPage(postId: document.id),
-                            ),
-                          );
-                        },
-                        child: Text('Read More'),
-                      ),
-                    ),
-                  ],
-                ),
+    onExit: (_) => setState(() => isHovered = false),
+    child: AnimatedScale(
+    duration: Duration(milliseconds: 200),
+    scale: isHovered ? 1.05 : 1.0,
+    child: AnimatedContainer(
+    duration: Duration(milliseconds: 200),
+    width: cardWidth > 0 ? cardWidth : MediaQuery.of(context).size.width * 0.9,
+    margin: EdgeInsets.symmetric(vertical: 8, horizontal: cardWidth > 0 ? 0 : MediaQuery.of(context).size.width * 0.05),
+    decoration: BoxDecoration(
+    gradient: LinearGradient(
+    colors: isHovered
+    ? [Colors.blue[600]!, Colors.purple[600]!]
+        : [Colors.blue[400]!, Colors.purple[400]!],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    ),
+    borderRadius: BorderRadius.circular(12),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.grey.withOpacity(isHovered ? 0.7 : 0.5),
+    spreadRadius: isHovered ? 3 : 2,
+    blurRadius: isHovered ? 7 : 5,
+    offset: Offset(0, 3),
+    ),
+    ],
+    ),
+    child: Padding(
+    padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FadeInLeft(
+            child: Text(
+              data['title'] ?? 'No Title',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ),
-        );
-      },
+          SizedBox(height: 8),
+          FadeInLeft(
+            child: Text(
+              'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          SizedBox(height: 16),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostDetailsPage(postId: document.id),
+                  ),
+                );
+              },
+              child: Text('Read More'),
+            ),
+          ),
+        ],
+      ),
+    ),
+    ),
+    ),
+      );
+        },
     );
   }
+
   void _applyFilters() {
     setState(() {
       _filteredDocs = _initialResults.where((doc) {
@@ -297,10 +321,12 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
         }
 
         final docCurrency = data['currency']?.toString() ?? '';
+        final docLanguage = data['language']?.toString() ?? '';
 
         return rewardsValue >= _minPrice &&
             rewardsValue <= _maxPrice &&
-            (_selectedCurrency == 'All' || docCurrency == _selectedCurrency);
+            (_selectedCurrency == 'All' || docCurrency == _selectedCurrency) &&
+            (_selectedLanguage == 'All' || docLanguage == _selectedLanguage);
       }).toList();
     });
   }
