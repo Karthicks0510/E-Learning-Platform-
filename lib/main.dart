@@ -19,23 +19,23 @@ Future<void> main() async {
 
   if (kIsWeb) {
     await Firebase.initializeApp(
-        options: const FirebaseOptions(
-            apiKey: "AIzaSyDXNM3sLFpKzajkm7TWaUA1smV5qcJdVgY",
-            authDomain: "e-learning-platform-1a0eb.firebaseapp.com",
-            projectId: "e-learning-platform-1a0eb",
-            storageBucket: "e-learning-platform-1a0eb.firebasestorage.app",
-            messagingSenderId: "789899806730",
-            appId: "1:789899806730:web:9111831cbed415c64e37f3"));
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyDXNM3sLFpKzajkm7TWaUA1smV5qcJdVgY",
+        authDomain: "e-learning-platform-1a0eb.firebaseapp.com",
+        projectId: "e-learning-platform-1a0eb",
+        storageBucket: "e-learning-platform-1a0eb.firebasestorage.app",
+        messagingSenderId: "789899806730",
+        appId: "1:789899806730:web:9111831cbed415c64e37f3",
+      ),
+    );
   } else {
     await Firebase.initializeApp();
   }
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -59,15 +59,14 @@ class MyApp extends StatelessWidget {
           fillColor: kPrimaryLightColor,
           iconColor: kPrimaryColor,
           prefixIconColor: kPrimaryColor,
-          contentPadding: EdgeInsets.symmetric(
-              horizontal: defaultPadding, vertical: defaultPadding),
+          contentPadding: EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(30)),
             borderSide: BorderSide.none,
           ),
         ),
       ),
-      home: const SplashScreen(),
+      home: const SplashScreen(), // Removed StreamChat widget
     );
   }
 }
@@ -121,3 +120,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:animate_do/animate_do.dart';
 import 'my_posts.dart';
 import 'search_user.dart';
-import 'chat_screen.dart'; // Import the chat screen
+import 'chat_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -106,7 +106,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   List<Widget> _buildDrawerItems(BuildContext context) {
     List<DrawerItem> items = [
       DrawerItem(Icons.home, "Home", context),
-      DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? "")), // Chat with currentUserId
+      DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? '')), // Pass UID
       DrawerItem(Icons.info, "About Us", context),
       DrawerItem(Icons.contact_mail, "Contact Us", context),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
