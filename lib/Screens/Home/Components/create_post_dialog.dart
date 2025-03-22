@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import 'package:path/path.dart' as path;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 
 class CreatePostDialog extends StatefulWidget {
@@ -15,25 +14,65 @@ class CreatePostDialog extends StatefulWidget {
 class _CreatePostDialogState extends State<CreatePostDialog> {
   String title = '';
   String description = '';
-  List<File> attachments = [];
+  List<PlatformFile> attachments = [];
   String rewards = '';
   String selectedCurrency = 'USD';
   List<String> preferredLanguages = [];
   String subjectCategory = '';
   final _formKey = GlobalKey<FormState>();
   final supabase = Supabase.instance.client;
+  bool _isUploading = false;
 
   List<String> languageOptions = [
-    'English', 'Tamil', 'Mandarin Chinese', 'Hindi', 'Spanish',
-    'French', 'Arabic', 'Bengali', 'Russian', 'Portuguese',
-    'Urdu', 'Indonesian', 'German', 'Japanese', 'Marathi',
-    'Telugu', 'Turkish', 'Yue Chinese (Cantonese)', 'Vietnamese', 'Italian'
+    'English',
+    'Tamil',
+    'Hindi',
+    'Spanish',
+    'French'
   ];
 
   String convertToTitleCase(String text) {
     if (text.isEmpty) return '';
     List<String> words = text.split(' ');
-    return words.map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '').join(' ');
+    return words
+        .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
+  }
+
+  Future<List<String>> _uploadAttachments(String postId) async {
+    List<String> attachmentUrls = [];
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User is not logged in. Please log in.')),
+        );
+      }
+      return [];
+    }
+
+    for (var file in attachments) {
+      try {
+        final filePath = 'users/${user.uid}/posts/${file.name}';
+        await supabase.storage.from('post-files').uploadBinary(
+          filePath,
+          file.bytes!,
+          fileOptions: FileOptions(cacheControl: '3600', upsert: false),
+        );
+        final publicUrl =
+        supabase.storage.from('post-files').getPublicUrl(filePath);
+        attachmentUrls.add(publicUrl);
+      } catch (e) {
+        print('Error uploading attachment: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error uploading attachment: ${file.name}')),
+          );
+        }
+      }
+    }
+    return attachmentUrls;
   }
 
   @override
@@ -48,26 +87,25 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
             children: <Widget>[
               TextFormField(
                 decoration: InputDecoration(labelText: 'Title'),
-                validator: (value) => value!.isEmpty ? 'Please enter a title' : null,
+                validator: (value) =>
+                value!.isEmpty ? 'Please enter a title' : null,
                 onChanged: (value) => title = value,
               ),
-              SizedBox(height: 10),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Description'),
-                validator: (value) => value!.isEmpty ? 'Please enter a description' : null,
+                validator: (value) =>
+                value!.isEmpty ? 'Please enter a description' : null,
                 onChanged: (value) => description = value,
               ),
-              SizedBox(height: 10),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Subject Category'),
-                validator: (value) => value!.isEmpty ? 'Please enter a subject category' : null,
                 onChanged: (value) => subjectCategory = value,
               ),
-              SizedBox(height: 10),
               Text('Preferred Languages'),
               Wrap(
                 spacing: 8.0,
-                children: languageOptions.map((language) => ChoiceChip(
+                children: languageOptions
+                    .map((language) => ChoiceChip(
                   label: Text(language),
                   selected: preferredLanguages.contains(language),
                   onSelected: (isSelected) {
@@ -79,19 +117,21 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                       }
                     });
                   },
-                )).toList(),
+                ))
+                    .toList(),
               ),
-              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                  FilePickerResult? result =
+                  await FilePicker.platform.pickFiles(
                     allowMultiple: true,
                     type: FileType.any,
+                    withData: true,
                   );
 
                   if (result != null) {
                     setState(() {
-                      attachments = result.paths.map((path) => File(path!)).toList();
+                      attachments = result.files;
                     });
                   }
                 },
@@ -99,9 +139,9 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
               ),
               if (attachments.isNotEmpty)
                 Column(
-                  children: attachments.map((file) => Text(path.basename(file.path))).toList(),
+                  children:
+                  attachments.map((file) => Text(file.name)).toList(),
                 ),
-              SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
@@ -117,7 +157,8 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                         selectedCurrency = newValue!;
                       });
                     },
-                    items: ['USD', 'EUR', 'GBP', 'INR'].map<DropdownMenuItem<String>>((String value) {
+                    items: ['USD', 'EUR', 'GBP', 'INR']
+                        .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -136,38 +177,61 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         ElevatedButton(
-          child: Text('Post'),
-          onPressed: () async {
+          child: _isUploading ? CircularProgressIndicator() : Text('Post'),
+          onPressed: _isUploading
+              ? null
+              : () async {
             if (_formKey.currentState!.validate()) {
+              if (!mounted) return; // Check before setState
+              setState(() => _isUploading = true);
+
               final user = FirebaseAuth.instance.currentUser;
               if (user == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('User is not logged in. Please log in.')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            'User is not logged in. Please log in.')),
+                  );
+                }
+                setState(() => _isUploading = false);
                 return;
               }
 
               try {
-                await FirebaseFirestore.instance.collection('posts').add({
+                final postId = Uuid().v4();
+                List<String> attachmentUrls =
+                await _uploadAttachments(postId);
+
+                await FirebaseFirestore.instance
+                    .collection('posts')
+                    .add({
                   'title': convertToTitleCase(title),
                   'description': description,
                   'rewards': rewards,
                   'currency': selectedCurrency,
                   'uid': user.uid,
-                  'postId': Uuid().v4(),
-                  'attachments': [],
+                  'postId': postId,
+                  'attachments': attachmentUrls,
                   'preferredLanguages': preferredLanguages,
                   'subjectCategory': convertToTitleCase(subjectCategory),
                 });
 
+                setState(() => _isUploading = false);
+
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Post saved successfully!')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Post saved successfully!')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('An error occurred: $e')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('An error occurred: $e')),
+                  );
+                }
+                setState(() => _isUploading = false);
               }
             }
           },
