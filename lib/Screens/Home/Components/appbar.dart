@@ -84,13 +84,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
             ),
             child: TextField(
               controller: _searchController,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.white, fontFamily: 'Open Sans'),
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.symmetric(vertical: 15),
                 filled: true,
                 fillColor: Colors.white.withAlpha((0.15 * 255).round()),
                 hintText: 'Search...',
-                hintStyle: TextStyle(color: Colors.white70),
+                hintStyle: TextStyle(color: Colors.white70, fontFamily: 'Open Sans'),
                 prefixIcon: Icon(Icons.search, color: Colors.white70),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -102,7 +102,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
           ),
         ),
         actions: [
-          NotificationBell(), // Use the NotificationBell widget from notification.dart
+          NotificationBell(),
           SizedBox(width: 10),
           _buildIconButton(Icons.account_circle, _isHoveringProfile, () {
             Navigator.push(

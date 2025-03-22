@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 import 'components/post_details_page.dart'; // Import the PostDetailsPage
 
 class AllPosts extends StatefulWidget {
@@ -16,7 +16,7 @@ class _AllPostsState extends State<AllPosts> {
       stream: FirebaseFirestore.instance.collection('posts').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Something went wrong'));
+          return Center(child: Text('Something went wrong', style: GoogleFonts.openSans()));
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -24,7 +24,7 @@ class _AllPostsState extends State<AllPosts> {
         }
 
         if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text('No posts yet.'));
+          return Center(child: Text('No posts yet.', style: GoogleFonts.openSans()));
         }
 
         return Padding(
@@ -121,7 +121,7 @@ class _PostItemState extends State<PostItem> {
               FadeInLeft(
                 child: Text(
                   widget.data['title'] ?? 'No Title',
-                  style: TextStyle(
+                  style: GoogleFonts.openSans(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -136,7 +136,7 @@ class _PostItemState extends State<PostItem> {
                     SizedBox(width: 4),
                     Text(
                       'Rewards: ${widget.data['rewards'] ?? 'N/A'} ${widget.data['currency'] ?? ''}',
-                      style: TextStyle(color: Colors.white70),
+                      style: GoogleFonts.openSans(color: Colors.white70),
                     ),
                   ],
                 ),

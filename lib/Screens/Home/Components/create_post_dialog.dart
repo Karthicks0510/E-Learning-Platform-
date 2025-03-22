@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart'; // Import for TextInputFormatter
 
 class CreatePostDialog extends StatefulWidget {
   @override
@@ -35,6 +35,7 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     if (text.isEmpty) return '';
     List<String> words = text.split(' ');
     return words
+        .where((word) => word.isNotEmpty)
         .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
         .join(' ');
   }
@@ -54,14 +55,13 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
 
     for (var file in attachments) {
       try {
-        final filePath = 'users/${user.uid}/posts/${file.name}';
+        final filePath = 'users/${user.uid}/posts/$postId/${file.name}';
         await supabase.storage.from('post-files').uploadBinary(
           filePath,
           file.bytes!,
           fileOptions: FileOptions(cacheControl: '3600', upsert: false),
         );
-        final publicUrl =
-        supabase.storage.from('post-files').getPublicUrl(filePath);
+        final publicUrl = supabase.storage.from('post-files').getPublicUrl(filePath);
         attachmentUrls.add(publicUrl);
       } catch (e) {
         print('Error uploading attachment: $e');
@@ -148,6 +148,19 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                     child: TextFormField(
                       decoration: InputDecoration(labelText: 'Rewards'),
                       onChanged: (value) => rewards = value,
+                      keyboardType: TextInputType.number, // Restrict to numbers
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.digitsOnly // Allow only digits
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a reward amount';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   DropdownButton<String>(
@@ -182,7 +195,7 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
               ? null
               : () async {
             if (_formKey.currentState!.validate()) {
-              if (!mounted) return; // Check before setState
+              if (!mounted) return;
               setState(() => _isUploading = true);
 
               final user = FirebaseAuth.instance.currentUser;
@@ -205,16 +218,18 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
 
                 await FirebaseFirestore.instance
                     .collection('posts')
-                    .add({
+                    .doc(postId)
+                    .set({
                   'title': convertToTitleCase(title),
                   'description': description,
-                  'rewards': rewards,
+                  'rewards': int.parse(rewards), // Store rewards as an integer
                   'currency': selectedCurrency,
                   'uid': user.uid,
                   'postId': postId,
                   'attachments': attachmentUrls,
                   'preferredLanguages': preferredLanguages,
                   'subjectCategory': convertToTitleCase(subjectCategory),
+                  'timestamp': FieldValue.serverTimestamp(),
                 });
 
                 setState(() => _isUploading = false);

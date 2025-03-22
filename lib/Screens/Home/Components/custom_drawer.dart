@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuthAlias;
 import 'package:animate_do/animate_do.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as SupabaseAlias;
+import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
 import 'my_posts.dart';
 import 'search_user.dart';
 import 'chat_screen.dart';
+import '../../Welcome/welcome_screen.dart'; // Import welcome screen
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -14,8 +17,10 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   String? _userName;
   String? _userEmail;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? _profileImageUrl;
+  final FirebaseAuthAlias.FirebaseAuth _auth = FirebaseAuthAlias.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseAlias.SupabaseClient _supabase = SupabaseAlias.Supabase.instance.client;
 
   @override
   void initState() {
@@ -24,7 +29,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   Future<void> _loadUserData() async {
-    User? user = _auth.currentUser;
+    FirebaseAuthAlias.User? user = _auth.currentUser;
     if (user != null) {
       try {
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
@@ -32,6 +37,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
           setState(() {
             _userName = userDoc.get('username');
             _userEmail = user.email;
+            _profileImageUrl = userDoc.get('profile_url');
           });
         } else {
           setState(() {
@@ -54,6 +60,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
     }
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await _auth.signOut();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('uid'); // Remove uid from shared preferences
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => WelcomeScreen()), // Navigate to welcome screen
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -72,7 +88,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
               ),
               currentAccountPicture: BounceInDown(
                 child: CircleAvatar(
-                  backgroundImage: AssetImage("assets/profile.jpg"),
+                  backgroundImage: _profileImageUrl != null
+                      ? NetworkImage(_profileImageUrl!)
+                      : AssetImage("assets/profile.jpg"),
                   radius: 30,
                 ),
               ),
@@ -106,13 +124,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
   List<Widget> _buildDrawerItems(BuildContext context) {
     List<DrawerItem> items = [
       DrawerItem(Icons.home, "Home", context),
-      DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? '')), // Pass UID
+      DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? '')),
       DrawerItem(Icons.info, "About Us", context),
       DrawerItem(Icons.contact_mail, "Contact Us", context),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
       DrawerItem(Icons.search, "Search User", context, SearchUser()),
       DrawerItem(Icons.settings, "Settings", context),
-      DrawerItem(Icons.logout, "Logout", context),
+      DrawerItem(Icons.logout, "Logout", context, null, () => _logout(context)), // Add logout function
     ];
 
     return items
@@ -132,7 +150,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
           return InkWell(
             onTap: () {
               Navigator.pop(context);
-              if (item.navigateTo != null) {
+              if (item.onTap != null) {
+                item.onTap!(); // Execute the onTap function if provided
+              } else if (item.navigateTo != null) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -170,6 +190,7 @@ class DrawerItem {
   final String title;
   final BuildContext context;
   final Widget? navigateTo;
+  final Function()? onTap; // Add onTap function
 
-  DrawerItem(this.icon, this.title, this.context, [this.navigateTo]);
+  DrawerItem(this.icon, this.title, this.context, [this.navigateTo, this.onTap]);
 }
