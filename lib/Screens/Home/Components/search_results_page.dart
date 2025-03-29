@@ -177,7 +177,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                 _applyFilters();
               });
             },
-            items: ['All', 'English', 'Spanish', 'French', 'Hindi']
+            items: ['All', 'English', 'Spanish', 'French', 'Hindi','Tamil','Telugu','Kannada','Malayalam','Chinese','Japanese','Korean']
                 .map((language) =>
                 DropdownMenuItem(
                   value: language,
@@ -234,9 +234,9 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
       bool isHovered = false;
       return MouseRegion(
           onEnter: (_) => setState(() => isHovered = true),
-    onExit: (_) => setState(() => isHovered = false),
-    child: AnimatedScale(
-    duration: Duration(milliseconds: 200),
+          onExit: (_) => setState(() => isHovered = false),
+          child: AnimatedScale(
+          duration: Duration(milliseconds: 200),
     scale: isHovered ? 1.05 : 1.0,
     child: AnimatedContainer(
     duration: Duration(milliseconds: 200),
@@ -262,47 +262,48 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
     ),
     child: Padding(
     padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FadeInLeft(
-            child: Text(
-              data['title'] ?? 'No Title',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    FadeInLeft(
+    child: Text(
+    data['title']?? 'No Title',
+      style: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+    ),
+    ),
+            SizedBox(height: 8),
+            FadeInLeft(
+              child: Text(
+                'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}',
+                style: TextStyle(color: Colors.white70),
               ),
             ),
-          ),
-          SizedBox(height: 8),
-          FadeInLeft(
-            child: Text(
-              'Rewards: ${data['rewards'] ?? 'N/A'} ${data['currency'] ?? ''}',
-              style: TextStyle(color: Colors.white70),
+            SizedBox(height: 16),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PostDetailsPage(postId: document.id),
+                    ),
+                  );
+                },
+                child: Text('Read More'),
+              ),
             ),
+            ],
           ),
-          SizedBox(height: 16),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PostDetailsPage(postId: document.id),
-                  ),
-                );
-              },
-              child: Text('Read More'),
-            ),
-          ),
-        ],
       ),
-    ),
-    ),
-    ),
-      );
+          ),
+          ),
+          );
         },
     );
   }
@@ -321,12 +322,21 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
         }
 
         final docCurrency = data['currency']?.toString() ?? '';
-        final docLanguage = data['language']?.toString() ?? '';
+        final preferredLanguages = data['preferredLanguages']; // Changed to preferredLanguages
+
+        bool languageMatch = true;
+        if (_selectedLanguage != 'All') {
+          if (preferredLanguages is List) {
+            languageMatch = preferredLanguages.contains(_selectedLanguage);
+          } else {
+            languageMatch = preferredLanguages == _selectedLanguage;
+          }
+        }
 
         return rewardsValue >= _minPrice &&
             rewardsValue <= _maxPrice &&
             (_selectedCurrency == 'All' || docCurrency == _selectedCurrency) &&
-            (_selectedLanguage == 'All' || docLanguage == _selectedLanguage);
+            languageMatch; // Use languageMatch variable
       }).toList();
     });
   }

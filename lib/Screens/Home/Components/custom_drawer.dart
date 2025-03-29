@@ -3,11 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuthAlias;
 import 'package:animate_do/animate_do.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as SupabaseAlias;
-import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
+import 'package:shared_preferences/shared_preferences.dart';
 import 'my_posts.dart';
 import 'search_user.dart';
 import 'chat_screen.dart';
-import '../../Welcome/welcome_screen.dart'; // Import welcome screen
+import '../../Welcome/welcome_screen.dart';
+import 'accepted_posts_page.dart';
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -63,10 +64,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
   Future<void> _logout(BuildContext context) async {
     await _auth.signOut();
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('uid'); // Remove uid from shared preferences
+    await prefs.remove('uid');
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => WelcomeScreen()), // Navigate to welcome screen
+      MaterialPageRoute(builder: (context) => WelcomeScreen()),
     );
   }
 
@@ -125,12 +126,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
     List<DrawerItem> items = [
       DrawerItem(Icons.home, "Home", context),
       DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? '')),
-      DrawerItem(Icons.info, "About Us", context),
+      DrawerItem(Icons.check_circle_outline, "Accepted Posts", context, AcceptedPostsPage()),
       DrawerItem(Icons.contact_mail, "Contact Us", context),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
       DrawerItem(Icons.search, "Search User", context, SearchUser()),
       DrawerItem(Icons.settings, "Settings", context),
-      DrawerItem(Icons.logout, "Logout", context, null, () => _logout(context)), // Add logout function
+      DrawerItem(Icons.logout, "Logout", context, null, () => _logout(context)),
     ];
 
     return items
@@ -151,7 +152,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             onTap: () {
               Navigator.pop(context);
               if (item.onTap != null) {
-                item.onTap!(); // Execute the onTap function if provided
+                item.onTap!();
               } else if (item.navigateTo != null) {
                 Navigator.push(
                   context,
@@ -190,7 +191,7 @@ class DrawerItem {
   final String title;
   final BuildContext context;
   final Widget? navigateTo;
-  final Function()? onTap; // Add onTap function
+  final Function()? onTap;
 
   DrawerItem(this.icon, this.title, this.context, [this.navigateTo, this.onTap]);
 }

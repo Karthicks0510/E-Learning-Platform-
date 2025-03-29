@@ -15,6 +15,7 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
   String _offerCurrency = '';
   String _offerDescription = '';
   List<String> _offerAttachments = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -34,27 +35,32 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
         .collection('posts')
         .orderBy('rewards', descending: true)
         .limit(1)
-        .snapshots() // Use snapshots() for real-time updates
+        .snapshots()
         .listen((QuerySnapshot querySnapshot) {
       if (querySnapshot.docs.isNotEmpty) {
         final DocumentSnapshot doc = querySnapshot.docs.first;
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
           _offerTitle = data['title'] ?? 'No Title';
-          _offerReward = data['rewards']?.toString() ?? 'N/A'; // Convert to string
+          _offerReward = data['rewards']?.toString() ?? 'N/A';
           _offerCurrency = data['currency'] ?? '';
           _offerDescription = data['description'] ?? 'No Description';
           _offerAttachments = List<String>.from(data['attachments'] ?? []);
+          _isLoading = false;
         });
       } else {
         setState(() {
-          _offerTitle = 'No offers today.';
+          if (_isLoading) {
+            _offerTitle = 'No offers today.';
+          }
+          _isLoading = false;
         });
       }
     }, onError: (error) {
       print('Error fetching offer of the day: $error');
       setState(() {
         _offerTitle = 'Error loading offer.';
+        _isLoading = false;
       });
     });
   }
@@ -62,7 +68,7 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.deepPurple[50], // Light purple background
+      backgroundColor: Colors.deepPurple[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20.0),
       ),
@@ -81,7 +87,9 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
           ),
         ],
       ),
-      content: SingleChildScrollView(
+      content: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -144,12 +152,13 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
                           .asMap()
                           .entries
                           .map((entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 4.0),
                         child: Row(
                           children: [
                             Expanded(
                               child: Text(
-                                'File ${entry.key + 1}', // Display "File 1", "File 2", etc.
+                                'File ${entry.key + 1}',
                                 style: GoogleFonts.roboto(
                                   fontSize: 14,
                                   color: Colors.grey[600],
@@ -158,7 +167,8 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
                             ),
                             IconButton(
                               icon: Icon(Icons.remove_red_eye),
-                              onPressed: () => _launchURL(entry.value),
+                              onPressed: () =>
+                                  _launchURL(entry.value),
                             ),
                           ],
                         ),

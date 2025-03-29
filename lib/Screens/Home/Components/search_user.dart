@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import '../home_screen.dart';
+import 'user_profile_screen.dart';
+
 class SearchUser extends StatefulWidget {
   @override
   _SearchUserState createState() => _SearchUserState();
@@ -19,13 +21,12 @@ class _SearchUserState extends State<SearchUser> {
       return;
     }
 
-    QuerySnapshot snapshot =
-    await FirebaseFirestore.instance.collection('users').get();
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('users').get();
     List<Map<String, dynamic>> results = snapshot.docs.map((doc) {
       return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
     }).where((user) {
-      String fullName = user['fullName'].toString().toLowerCase();
-      return fullName.contains(query.toLowerCase());
+      String username = user['username']?.toString().toLowerCase() ?? '';
+      return username.contains(query.toLowerCase());
     }).toList();
 
     setState(() {
@@ -38,7 +39,7 @@ class _SearchUserState extends State<SearchUser> {
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomeScreen())); // Navigate to HomeScreen
+            context, MaterialPageRoute(builder: (context) => HomeScreen()));
         return false;
       },
       child: Scaffold(
@@ -47,160 +48,124 @@ class _SearchUserState extends State<SearchUser> {
             icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.pushReplacement(
-                  context, MaterialPageRoute(builder: (context) => HomeScreen())); // Navigate to HomeScreen
+                  context, MaterialPageRoute(builder: (context) => HomeScreen()));
             },
           ),
-          title: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 400),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: searchUsers,
-                decoration: InputDecoration(
-                  hintText: 'Search Users...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.white70),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
+          title: Text("Chats", style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.deepPurple,
           iconTheme: IconThemeData(color: Colors.white),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = constraints.maxWidth > 600 ? 300.0 : 200.0;
-              return Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: _searchResults.map((user) {
-                  return SizedBox(
-                    width: cardWidth,
-                    child: FadeInLeft(
-                      child: Card(
-                        margin: EdgeInsets.symmetric(vertical: 5),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
-                        elevation: 4,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.deepPurple.shade100,
-                            child: Icon(Icons.person, color: Colors.deepPurple),
-                          ),
-                          title: Text(user['fullName'],
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(user['occupation'] ?? 'No occupation'),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    UserProfileScreen(userId: user['id']),
-                              ),
-                            );
-                          },
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 600),
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.deepPurple, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                          offset: Offset(0, 3),
                         ),
+                      ],
+                    ),
+                    child: Center(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: searchUsers,
+                        decoration: InputDecoration(
+                          hintText: 'Search Users...',
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey.shade500),
+                            onPressed: () {
+                              _searchController.clear();
+                              searchUsers('');
+                            },
+                          )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
-                  );
-                }).toList(),
-              );
-            },
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Center( // Wrap ListView.builder in Center
+                  child: ConstrainedBox( // Limit width of ListView.builder
+                    constraints: BoxConstraints(maxWidth: 600),
+                    child: ListView.builder(
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final user = _searchResults[index];
+                        return Padding( // Add padding around each card
+                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                          child: FadeInLeft(
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 4,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.grey.shade300,
+                                  backgroundImage: user['profile_url'] != null
+                                      ? NetworkImage(user['profile_url'])
+                                      : null,
+                                  child: user['profile_url'] == null
+                                      ? Icon(Icons.person, color: Colors.white)
+                                      : null,
+                                ),
+                                title: Text(user['username'] ?? 'Unknown'),
+                                subtitle: Text(user['designation'] ?? 'No Designation'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserProfileScreen(userId: user['id']),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
-
-class UserProfileScreen extends StatelessWidget {
-  final String userId;
-
-  UserProfileScreen({required this.userId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('User Profile', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.deepPurple,
-      ),
-      body: Container(
-        color: Colors.grey.shade100,
-        child: FutureBuilder<DocumentSnapshot>(
-          future:
-          FirebaseFirestore.instance.collection('users').doc(userId).get(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return Center(child: CircularProgressIndicator());
-            }
-            var userData = snapshot.data!.data() as Map<String, dynamic>;
-            return FadeIn(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.deepPurple.shade100,
-                            child: Icon(Icons.person,
-                                size: 50, color: Colors.deepPurple),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Center(
-                          child: Text(userData['fullName'],
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                            'Occupation: ${userData['occupation'] ?? "Not specified"}',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 10),
-                        Text('Email: ${userData['email'] ?? "Not provided"}',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 10),
-                        Text('Skills: ${userData['skills'] ?? "Not provided"}',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 10),
-                        Text(
-                            'Projects: ${userData['projects'] ?? "Not provided"}',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 10),
-                        Text('About: ${userData['about'] ?? "Not provided"}',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-

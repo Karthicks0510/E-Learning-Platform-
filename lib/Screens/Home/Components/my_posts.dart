@@ -1,27 +1,45 @@
-// my_posts.dart
 import 'package:e_learning_platform/Screens/Home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'post_details_page.dart';
+import 'edit_post_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MyPostsScreen extends StatelessWidget {
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  MyPostsScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
+    final firebase_auth.User? user = firebase_auth.FirebaseAuth.instance.currentUser;
+
     if (user == null) {
-      return Center(child: Text("Please log in to view your posts."));
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text('My Posts', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.purple,
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        body: Center(child: Text('Please log in to view your posts.')),
+      );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("My Posts"),
-        backgroundColor: Colors.deepPurple,
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>HomeScreen()));
-          },
+          onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen())),
         ),
+        title: Text('My Posts', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.purple,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -30,99 +48,24 @@ class MyPostsScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text("Something went wrong."));
+            return Center(child: Text('Something went wrong.'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.data!.docs.isEmpty) {
-            return Center(child: Text("You have no posts yet."));
+          if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text('You have no posts.'));
           }
 
-          return GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8.0,
-              mainAxisSpacing: 8.0,
-            ),
+          return ListView.builder(
             itemCount: snapshot.data!.docs.length,
-            padding: EdgeInsets.all(8.0),
             itemBuilder: (context, index) {
-              Map<String, dynamic> data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    _showFullPost(
-                      context,
-                      data['title'] ?? "No Title",
-                      data['description'] ?? "No Description",
-                      data['rewards'] ?? "N/A",
-                      data['attachment'] ?? "",
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['title'] ?? "No Title",
-                          style: TextStyle(
-                            fontSize: 18.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8.0),
-                        Text(
-                          'Reward: ${data['rewards'] ?? "N/A"}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.green,
-                          ),
-                        ),
-                        SizedBox(height: 8.0),
-                        Expanded(
-                          child: Text(
-                            data['description'] ?? "No Description",
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(height: 8.0),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                _showFullPost(
-                                  context,
-                                  data['title'] ?? "No Title",
-                                  data['description'] ?? "No Description",
-                                  data['rewards'] ?? "N/A",
-                                  data['attachment'] ?? "",
-                                );
-                              },
-                              child: Text(
-                                "Read More",
-                                style: TextStyle(
-                                  color: Colors.deepPurple,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
+              final document = snapshot.data!.docs[index];
+              final data = document.data() as Map<String, dynamic>;
+
+              return _buildPostCard(context, data, document.id);
             },
           );
         },
@@ -130,61 +73,130 @@ class MyPostsScreen extends StatelessWidget {
     );
   }
 
-  void _showFullPost(
-      BuildContext context, String title, String description, String reward, String attachment) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          titlePadding: EdgeInsets.all(16.0),
-          contentPadding: EdgeInsets.all(16.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-          ),
-          content: SingleChildScrollView(
+  Widget _buildPostCard(BuildContext context, Map<String, dynamic> data, String postId) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600),
+        child: Card(
+          margin: EdgeInsets.all(8.0),
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Reward: $reward', style: TextStyle(fontWeight: FontWeight.w500)),
-                SizedBox(height: 16.0),
-                Text("Description:"),
-                SizedBox(height: 8.0),
-                Text(description),
-                SizedBox(height: 16.0),
-                if (attachment.isNotEmpty)
-                  Row(
-                    children: [
-                      Icon(Icons.visibility, color: Colors.grey),
-                      SizedBox(width: 8.0),
-                      InkWell(
-                        onTap: () {
-                          // TODO: Implement logic to view attachment
-                          print("View attachment: $attachment");
-                        },
-                        child: Text(
-                          attachment,
-                          style: TextStyle(
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
+                Text(
+                  data['title'] ?? 'No Title',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('Rewards: ${data['rewards'] ?? 'N/A'}'),
+                SizedBox(height: 8),
+                Text('Status: ${data['status'] ?? 'Pending'}'),
+                if (data['solutionUrl'] != null && data['solutionUrl'].isNotEmpty)
+                  TextButton(
+                    onPressed: () => _launchURL(data['solutionUrl']),
+                    child: Text('View Solution'),
                   ),
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PostDetailsPage(postId: postId),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          minimumSize: Size(80, 45),
+                        ),
+                        child: Text('Read More', style: TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditPostPage(postId: postId),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _showDeleteConfirmation(context, postId, data['imageUrl']),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          actions: <Widget>[
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String postId, String? imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete this post?'),
+          actions: [
             TextButton(
-              child: Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.pop(context),
+              child: Text('No'),
+            ),
+            TextButton(
+              onPressed: () => _deletePost(context, postId, imageUrl),
+              child: Text('Yes'),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _deletePost(BuildContext context, String postId, String? imageUrl) async {
+    try {
+      await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        Uri uri = Uri.parse(imageUrl);
+        String fileName = uri.pathSegments.last;
+        await supabase.storage.from('posts').remove([fileName]);
+      }
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post deleted successfully.')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete post.')));
+      }
+    }
+  }
+
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri)) {
+      throw 'Could not launch $url';
+    }
   }
 }
