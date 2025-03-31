@@ -60,12 +60,24 @@ class _CustomAppBarState extends State<CustomAppBar> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leading: widget.isMobile
-            ? IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: widget.onMenuPressed,
-        )
-            : null,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min, // Important to prevent extra padding
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0), // Adjust padding as needed
+              child: Image.asset(
+                'assets/icons/logo1.webp', // Path to your logo image
+                width: 40, // Adjust logo width as needed
+                height: 40, // Adjust logo height as needed
+              ),
+            ),
+            if (widget.isMobile)
+              IconButton(
+                icon: Icon(Icons.menu, color: Colors.white),
+                onPressed: widget.onMenuPressed,
+              ),
+          ],
+        ),
         title: Center(
           child: Container(
             width: searchBarWidth,

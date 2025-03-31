@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
-import 'components/post_details_page.dart'; // Import the PostDetailsPage
+import 'package:google_fonts/google_fonts.dart';
+import 'components/post_details_page.dart';
 
 class AllPosts extends StatefulWidget {
   @override
@@ -16,7 +16,8 @@ class _AllPostsState extends State<AllPosts> {
       stream: FirebaseFirestore.instance.collection('posts').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Something went wrong', style: GoogleFonts.openSans()));
+          return Center(
+              child: Text('Something went wrong', style: GoogleFonts.openSans()));
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -25,6 +26,19 @@ class _AllPostsState extends State<AllPosts> {
 
         if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
           return Center(child: Text('No posts yet.', style: GoogleFonts.openSans()));
+        }
+
+        // Filter out posts with status 'completed'
+        final filteredDocs = snapshot.data!.docs
+            .where((document) =>
+        (document.data() as Map<String, dynamic>)['status'] !=
+            'Completed')
+            .toList();
+
+        if (filteredDocs.isEmpty) {
+          return Center(
+              child: Text('No active posts available.',
+                  style: GoogleFonts.openSans()));
         }
 
         return Padding(
@@ -36,7 +50,7 @@ class _AllPostsState extends State<AllPosts> {
                 child: Wrap(
                   spacing: 8.0,
                   runSpacing: 8.0,
-                  children: snapshot.data!.docs.map((document) {
+                  children: filteredDocs.map((document) {
                     Map<String, dynamic> data =
                     document.data() as Map<String, dynamic>;
                     return SizedBox(
@@ -79,7 +93,7 @@ class _PostItemState extends State<PostItem> {
               pageBuilder: (context, animation, secondaryAnimation) =>
                   FadeTransition(
                     opacity: animation,
-                    child: PostDetailsPage(postId: widget.document.id), // Use imported PostDetailsPage
+                    child: PostDetailsPage(postId: widget.document.id),
                   ),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
