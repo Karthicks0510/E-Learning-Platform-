@@ -8,8 +8,9 @@ import 'package:lottie/lottie.dart';
 import 'dart:async';
 import 'Screens/Home/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 Future<void> main() async {
+  await dotenv.load(fileName: "config.env");
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(

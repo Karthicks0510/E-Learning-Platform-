@@ -30,39 +30,69 @@ class _OfferOfTheDayDialogState extends State<OfferOfTheDayDialog> {
     }
   }
 
-  void _fetchOfferOfTheDay() {
-    FirebaseFirestore.instance
-        .collection('posts')
-        .orderBy('rewards', descending: true)
-        .limit(1)
-        .snapshots()
-        .listen((QuerySnapshot querySnapshot) {
-      if (querySnapshot.docs.isNotEmpty) {
-        final DocumentSnapshot doc = querySnapshot.docs.first;
-        final data = doc.data() as Map<String, dynamic>;
-        setState(() {
-          _offerTitle = data['title'] ?? 'No Title';
-          _offerReward = data['rewards']?.toString() ?? 'N/A';
-          _offerCurrency = data['currency'] ?? '';
-          _offerDescription = data['description'] ?? 'No Description';
-          _offerAttachments = List<String>.from(data['attachments'] ?? []);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          if (_isLoading) {
+  Future<void> _fetchOfferOfTheDay() async {
+    try {
+      FirebaseFirestore.instance
+          .collection('posts')
+          .where('status', isEqualTo: 'pending')
+          .get() // Fetch all pending posts
+          .then((QuerySnapshot querySnapshot) {
+        if (querySnapshot.docs.isNotEmpty) {
+          List<DocumentSnapshot> pendingPosts = querySnapshot.docs;
+
+          // Sort the posts by rewards (descending)
+          pendingPosts.sort((a, b) {
+            double rewardA = (a.data() as Map<String, dynamic>)['rewards'] is double
+                ? (a.data() as Map<String, dynamic>)['rewards']
+                : (a.data() as Map<String, dynamic>)['rewards'] is int
+                ? (a.data() as Map<String, dynamic>)['rewards'].toDouble()
+                : 0.0;
+            double rewardB = (b.data() as Map<String, dynamic>)['rewards'] is double
+                ? (b.data() as Map<String, dynamic>)['rewards']
+                : (b.data() as Map<String, dynamic>)['rewards'] is int
+                ? (b.data() as Map<String, dynamic>)['rewards'].toDouble()
+                : 0.0;
+            return rewardB.compareTo(rewardA); // Descending order
+          });
+
+          // Get the post with the highest reward
+          DocumentSnapshot highestRewardPost = pendingPosts.first;
+          final data = highestRewardPost.data() as Map<String, dynamic>;
+
+          double reward = (data['rewards'] is double)
+              ? data['rewards']
+              : (data['rewards'] is int)
+              ? data['rewards'].toDouble()
+              : 0.0;
+
+          setState(() {
+            _offerTitle = data['title'] ?? 'No Title';
+            _offerReward = reward.toStringAsFixed(2);
+            _offerCurrency = data['currency'] ?? '';
+            _offerDescription = data['description'] ?? 'No Description';
+            _offerAttachments = List<String>.from(data['attachments'] ?? []);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
             _offerTitle = 'No offers today.';
-          }
+            _isLoading = false;
+          });
+        }
+      }).catchError((error) {
+        print('Error fetching offer of the day: $error');
+        setState(() {
+          _offerTitle = 'Error loading offer.';
           _isLoading = false;
         });
-      }
-    }, onError: (error) {
-      print('Error fetching offer of the day: $error');
+      });
+    } catch (e) {
+      print('Error fetching offer of the day: $e');
       setState(() {
         _offerTitle = 'Error loading offer.';
         _isLoading = false;
       });
-    });
+    }
   }
 
   @override

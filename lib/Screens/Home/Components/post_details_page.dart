@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final String postId;
@@ -35,6 +38,17 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
       final acceptedAt = FieldValue.serverTimestamp();
       final deadline = Timestamp.fromDate(DateTime.now().add(const Duration(hours: 3)));
 
+      final postSnapshot = await postRef.get();
+      final postData = postSnapshot.data() as Map<String, dynamic>?;
+
+      if (postData == null || postData['uid'] == null) {
+        print("Post data or owner UID not found.");
+        return;
+      }
+
+      final postOwnerUid = postData['uid'];
+      final postTitle = postData['title'] ?? 'Post';
+
       await postRef.update({
         'acceptedBy': accepterUid,
         'status': 'Accepted',
@@ -42,15 +56,104 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         'deadline': deadline,
       });
 
+      // Add notification to the post owner using set with merge true
+      await FirebaseFirestore.instance.collection('notifications').doc(postOwnerUid).set({
+        'notifications': FieldValue.arrayUnion([
+          {
+            'type': 'post_accepted',
+            'message': 'Your post "$postTitle" has been accepted!',
+            'timestamp': DateTime.now().toIso8601String(),
+            'postId': widget.postId,
+            'read': false,
+          }
+        ])
+      }, SetOptions(merge: true));
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post accepted successfully!')),
       );
+      //send email after accept
+      await sendAcceptanceEmail(widget.postId);
 
-      setState(() {}); // Refresh the UI after acceptance
+      setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error accepting post: $e')),
       );
+    }
+  }
+
+  Future<void> sendAcceptanceEmail(String postId) async {
+    try {
+      final postSnapshot = await FirebaseFirestore.instance.collection('posts').doc(postId).get();
+      if (postSnapshot.exists) {
+        final postData = postSnapshot.data() as Map<String, dynamic>;
+        final postOwnerUid = postData['uid'];
+        final accepterUid = FirebaseAuth.instance.currentUser?.uid;
+
+        final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(postOwnerUid).get();
+        if (userSnapshot.exists) {
+          final userData = userSnapshot.data() as Map<String, dynamic>;
+          final postOwnerEmail = userData['email'];
+          final postTitle = postData['title'];
+          String accepterUsername = 'User';
+
+          if (accepterUid != null) {
+            final accepterSnapshot = await FirebaseFirestore.instance.collection('users').doc(accepterUid).get();
+            if (accepterSnapshot.exists) {
+              final accepterData = accepterSnapshot.data() as Map<String, dynamic>;
+              accepterUsername = accepterData['username'] ?? 'User'; // Assuming 'username' field exists in users document
+            }
+          }
+
+          if (postOwnerEmail != null) {
+            await sendBrevoAcceptanceEmail(postOwnerEmail, accepterUsername, postTitle);
+          } else {
+            print('Post owner email not found.');
+          }
+        } else {
+          print('Post owner user document not found.');
+        }
+      } else {
+        print('Post document not found.');
+      }
+    } catch (e) {
+      print('Error sending acceptance email: $e');
+    }
+  }
+
+
+  Future<void> sendBrevoAcceptanceEmail(String toEmail, String accepterUsername, String postTitle) async {
+    final String apiKey = dotenv.env['BREVO_API_KEY']??''; // Replace with your Brevo API key
+    final String apiUrl = dotenv.env["BREVO_URL"]??''; // Brevo API endpoint
+    final String fromEmail = dotenv.env['ADMIN_EMAIL']??''; // Replace with your from email
+    final String fromName = 'SkillSphere'; // Replace with your from name
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'api-key': apiKey,
+        },
+        body: jsonEncode(<String, dynamic>{
+          'sender': {'email': fromEmail, 'name': fromName},
+          'to': [
+            {'email': toEmail}
+          ],
+          'subject': 'Your Post Has Been Accepted!',
+          'htmlContent': '<p>Your post "$postTitle" has been viewed and accepted by $accepterUsername on SkillSphere.</p>',
+        }),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 202) {
+        print('Acceptance email sent successfully via Brevo.');
+      } else {
+        print('Failed to send acceptance email via Brevo. Status code: ${response.statusCode}, Body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending acceptance email via Brevo: $e');
     }
   }
 

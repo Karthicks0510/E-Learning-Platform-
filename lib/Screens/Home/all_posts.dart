@@ -27,7 +27,7 @@ class _AllPostsState extends State<AllPosts> {
         if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
           return Center(child: Text('No posts yet.', style: GoogleFonts.openSans()));
         }
-
+    
         // Filter out posts with status 'completed'
         final filteredDocs = snapshot.data!.docs
             .where((document) =>

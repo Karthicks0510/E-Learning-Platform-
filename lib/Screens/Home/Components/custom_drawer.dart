@@ -1,3 +1,4 @@
+import 'package:e_learning_platform/Screens/Home/Components/contact_us.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuthAlias;
@@ -127,7 +128,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
       DrawerItem(Icons.home, "Home", context),
       DrawerItem(Icons.chat, "Chat", context, ChatScreen(currentUserId: _auth.currentUser?.uid ?? '')),
       DrawerItem(Icons.check_circle_outline, "Accepted Posts", context, AcceptedPostsPage()),
-      DrawerItem(Icons.contact_mail, "Contact Us", context),
+      DrawerItem(Icons.contact_mail, "Contact Us", context,ContactUsPage()),
       DrawerItem(Icons.post_add, "My Posts", context, MyPostsScreen()),
       DrawerItem(Icons.search, "Search User", context, SearchUser()),
       DrawerItem(Icons.settings, "Settings", context),

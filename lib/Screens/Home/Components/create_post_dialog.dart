@@ -5,6 +5,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CreatePostDialog extends StatefulWidget {
   @override
@@ -80,216 +83,257 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     return attachmentUrls;
   }
 
+  Future<void> sendBrevoConfirmationEmail(String userEmail, String postTitle) async {
+    final String apiKey = dotenv.env['BREVO_API_KEY']??''; // Replace with your Brevo API key
+    final String apiUrl = dotenv.env["BREVO_URL"]??''; // Brevo API endpoint
+    final String fromEmail = dotenv.env['ADMIN_EMAIL']??''; // Replace with your from email
+    final String fromName = 'SkillSphere'; // Replace with your from name
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'api-key': apiKey,
+        },
+        body: jsonEncode(<String, dynamic>{
+          'sender': {'email': fromEmail, 'name': fromName},
+          'to': [
+            {'email': userEmail}
+          ],
+          'subject': 'Your Post Has Been Posted Successfully!',
+          'htmlContent': '<p>Your post "$postTitle" has been successfully posted on SkillSphere.</p>',
+        }),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 202) {
+        print('Confirmation email sent successfully via Brevo.');
+      } else {
+        print('Failed to send confirmation email via Brevo. Status code: ${response.statusCode}, Body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending confirmation email via Brevo: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-        title: Text('Create Post', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        content: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Title',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  validator: (value) => value!.isEmpty ? 'Please enter a title' : null,
-                  onChanged: (value) => title = value,
+      title: Text('Create Post', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // ... (rest of the form fields - title, description, etc.) ...
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                SizedBox(height: 16),
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  validator: (value) => value!.isEmpty ? 'Please enter a description' : null,
-                  onChanged: (value) => description = value,
-                  maxLines: 3,
+                validator: (value) => value!.isEmpty ? 'Please enter a title' : null,
+                onChanged: (value) => title = value,
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                SizedBox(height: 16),
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Subject Category',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onChanged: (value) => subjectCategory = value,
+                validator: (value) => value!.isEmpty ? 'Please enter a description' : null,
+                onChanged: (value) => description = value,
+                maxLines: 3,
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Subject Category',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                SizedBox(height: 16),
-                InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Preferred Languages',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                onChanged: (value) => subjectCategory = value,
+              ),
+              SizedBox(height: 16),
+              InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Preferred Languages',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: languageOptions.map((language) {
+                    return FilterChip(
+                      label: Text(language),
+                      selected: preferredLanguages.contains(language),
+                      onSelected: (isSelected) {
+                        setState(() {
+                          if (isSelected) {
+                            preferredLanguages.add(language);
+                          } else {
+                            preferredLanguages.remove(language);
+                          }
+                        });
+                      },
+                      checkmarkColor: Colors.white,
+                      selectedColor: Colors.blue,
+                      labelStyle: TextStyle(color: preferredLanguages.contains(language) ? Colors.white : Colors.black),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                    allowMultiple: true,
+                    type: FileType.any,
+                    withData: true,
+                  );
+
+                  if (result != null) {
+                    setState(() {
+                      attachments = result.files;
+                    });
+                  }
+                },
+                icon: Icon(Icons.attach_file),
+                label: Text('Add Attachments'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              SizedBox(height: 8),
+              if (attachments.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: attachments.map((file) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Text(file.name, style: TextStyle(fontStyle: FontStyle.italic)),
+                  )).toList(),
+                ),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Rewards',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onChanged: (value) => rewards = value,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a reward amount';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
-                  child: Wrap(
-                    spacing: 8.0,
-                    runSpacing: 4.0,
-                    children: languageOptions.map((language) {
-                      return FilterChip(
-                        label: Text(language),
-                        selected: preferredLanguages.contains(language),
-                        onSelected: (isSelected) {
-                          setState(() {
-                            if (isSelected) {
-                              preferredLanguages.add(language);
-                            } else {
-                              preferredLanguages.remove(language);
-                            }
-                          });
-                        },
-                        checkmarkColor: Colors.white,
-                        selectedColor: Colors.blue,
-                        labelStyle: TextStyle(color: preferredLanguages.contains(language) ? Colors.white : Colors.black),
+                  SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: selectedCurrency,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedCurrency = newValue!;
+                      });
+                    },
+                    items: ['USD', 'EUR', 'GBP', 'INR','YEN','Franc','AUD','CAD'].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
                       );
                     }).toList(),
                   ),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      allowMultiple: true,
-                      type: FileType.any,
-                      withData: true,
-                    );
-
-                    if (result != null) {
-                      setState(() {
-                        attachments = result.files;
-                      });
-                    }
-                  },
-                  icon: Icon(Icons.attach_file),
-                  label: Text('Add Attachments'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                SizedBox(height: 8),
-                if (attachments.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: attachments.map((file) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Text(file.name, style: TextStyle(fontStyle: FontStyle.italic)),
-                    )).toList(),
-                  ),
-                SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Rewards',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onChanged: (value) => rewards = value,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a reward amount';
-                          }
-                          if (int.tryParse(value) == null) {
-                            return 'Please enter a valid number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    DropdownButton<String>(
-                      value: selectedCurrency,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedCurrency = newValue!;
-                        });
-                      },
-                      items: ['USD', 'EUR', 'GBP', 'INR','YEN','Franc','AUD','CAD'].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: <Widget>[
-    TextButton(
-    child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-    onPressed: () => Navigator.of(context).pop(),
-    ),
-    ElevatedButton(
-    child: _isUploading ? CircularProgressIndicator() : Text('Post', style: TextStyle(color: Colors.white)),
-    onPressed: _isUploading
-    ? null
-        : () async {
-    if (_formKey.currentState!.validate()) {
-    if (!mounted) return;
-    setState(() => _isUploading = true);
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-    if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('User is not logged in. Please log in.')),
-    );
-    }
-    setState(() => _isUploading = false);
-    return;
-    }
-
-    try {
-    final postId = Uuid().v4();
-    List<String> attachmentUrls = await _uploadAttachments(postId);
-    await FirebaseFirestore.instance
-        .collection('posts')
-        .doc(postId)
-        .set({
-      'title': convertToTitleCase(title),
-      'description': description,
-      'rewards': int.parse(rewards),
-      'currency': selectedCurrency,
-      'uid': user.uid,
-      'postId': postId,
-      'attachments': attachmentUrls,
-      'preferredLanguages': preferredLanguages,
-      'subjectCategory': convertToTitleCase(subjectCategory),
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    setState(() => _isUploading = false);
-
-    Navigator.of(context).pop();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Post saved successfully!')),
-      );
-    }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred: $e')),
-        );
-      }
-      setState(() => _isUploading = false);
-    }
-    }
-    },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-    ),
-        ],
+      actions: <Widget>[
+        TextButton(
+          child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        ElevatedButton(
+          child: _isUploading ? CircularProgressIndicator() : Text('Post', style: TextStyle(color: Colors.white)),
+          onPressed: _isUploading
+              ? null
+              : () async {
+            if (_formKey.currentState!.validate()) {
+              if (!mounted) return;
+              setState(() => _isUploading = true);
+
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('User is not logged in. Please log in.')),
+                  );
+                }
+                setState(() => _isUploading = false);
+                return;
+              }
+
+              try {
+                final postId = Uuid().v4();
+                List<String> attachmentUrls = await _uploadAttachments(postId);
+                await FirebaseFirestore.instance
+                    .collection('posts')
+                    .doc(postId)
+                    .set({
+                  'title': convertToTitleCase(title),
+                  'description': description,
+                  'rewards': int.parse(rewards),
+                  'currency': selectedCurrency,
+                  'uid': user.uid,
+                  'postId': postId,
+                  'attachments': attachmentUrls,
+                  'preferredLanguages': preferredLanguages,
+                  'subjectCategory': convertToTitleCase(subjectCategory),
+                  'timestamp': FieldValue.serverTimestamp(),
+                });
+
+                setState(() => _isUploading = false);
+
+                Navigator.of(context).pop();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Post saved successfully!')),
+                  );
+                }
+
+                // Send confirmation email via Brevo after successful post
+                if (user.email != null) {
+                  await sendBrevoConfirmationEmail(user.email!, convertToTitleCase(title));
+                }
+
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('An error occurred: $e')),
+                  );
+                }
+                setState(() => _isUploading = false);
+              }
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+      ],
     );
   }
 }

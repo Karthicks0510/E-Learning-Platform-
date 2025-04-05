@@ -41,34 +41,46 @@ class MyPostsScreen extends StatelessWidget {
         backgroundColor: Colors.purple,
         iconTheme: IconThemeData(color: Colors.white),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .where('uid', isEqualTo: user.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Something went wrong.'));
-          }
+      body: Container( // Added Container for background
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.purple.shade100.withOpacity(0.3), // Adjust opacity as needed
+              Colors.white,
+            ],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('posts')
+              .where('uid', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Something went wrong.'));
+            }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('You have no posts.'));
-          }
+            if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
+              return Center(child: Text('You have no posts.'));
+            }
 
-          return ListView.builder(
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              final document = snapshot.data!.docs[index];
-              final data = document.data() as Map<String, dynamic>;
+            return ListView.builder(
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final document = snapshot.data!.docs[index];
+                final data = document.data() as Map<String, dynamic>;
 
-              return _buildPostCard(context, data, document.id);
-            },
-          );
-        },
+                return _buildPostCard(context, data, document.id);
+              },
+            );
+          },
+        ),
       ),
     );
   }
